@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblioteca Centralizada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans" x-data="bibliotecaApp()">
+
+    <header class="bg-blue-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-tight">📚 Mi Biblioteca</h1>
+            <button @click="abrirModal = true" class="bg-white text-blue-600 px-4 py-1.5 rounded-lg font-semibold text-sm shadow hover:bg-blue-50 transition">
+                + Añadir
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <div class="mb-6 space-y-3">
+            <input type="text" x-model="buscar" placeholder="Buscar por ID, título o descripción..." 
+                   class="w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            
+            <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <template x-for="cat in categorias" :key="cat">
+                    <button @click="catSeleccionada = (catSeleccionada === cat) ? '' : cat"
+                            :class="catSeleccionada === cat ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200'"
+                            class="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shadow-sm transition"
+                            x-text="cat"></button>
+                </template>
+            </div>
+        </div>
+
+        <div x-show="cargando" class="text-center py-12 text-gray-500 font-medium">Cargando biblioteca...</div>
+        <div x-show="error" class="bg-red-50 text-red-600 p-4 rounded-xl text-center mb-4" x-text="error"></div>
+
+        <div class="grid gap-4 sm:grid-cols-2" x-show="!cargando">
+            <template x-for="item in archivosFiltrados()" :key="item.id">
+                <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-md" x-text="item.id"></span>
+                            <span class="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded-full font-medium" x-text="item.categoria"></span>
+                        </div>
+                        <h3 class="font-bold text-gray-900 text-base mb-1 line-clamp-2" x-text="item.titulo"></h3>
+                        <p class="text-gray-500 text-xs mb-4 line-clamp-3" x-text="item.descripcion || 'Sin descripción.'"></p>
+                    </div>
+                    
+                    <div class="flex justify-between items-center pt-3 border-t border-gray-50 text-[11px] text-gray-400">
+                        <span x-text="'Por: ' + item.usuario.split('@')[0]"></span>
+                        <a :href="item.url" target="_blank" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
+                            Ver archivo 🚀
+                        </a>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </main>
+
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" x-show="abrirModal" x-transition style="display: none;">
+        <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gray-900">Registrar en Biblioteca</h2>
+                <button @click="abrirModal = false" class="text-gray-400 text-xl font-bold p-1">&times;</button>
+            </div>
+
+            <form @submit.prevent="subirArchivo()" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Título</label>
+                    <input type="text" x-model="form.titulo" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Categoría</label>
+                    <select x-model="form.categoria" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white">
+                        <option value="">Seleccione...</option>
+                        <option value="Manuales">Manuales</option>
+                        <option value="Formatos">Formatos</option>
+                        <option value="Leyes/Normas">Leyes/Normas</option>
+                        <option value="Imágenes">Imágenes</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Descripción Corta</label>
+                    <textarea x-model="form.descripcion" rows="3" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Seleccionar Archivo</label>
+                    <input type="file" @change="procesarArchivo($event)" required class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+
+                <button type="submit" :disabled="subiendo"
+                        :class="subiendo ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'"
+                        class="w-full py-2.5 text-white font-bold text-sm rounded-lg shadow transition"
+                        x-text="subiendo ? 'Subiendo y Registrando...' : 'Guardar en Biblioteca'"></button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function bibliotecaApp() {
+            return {
+                WEB_APP_URL: 'https://script.google.com/macros/s/AKfycby7L41W4M9_mOEOdFjGe9m_kDXIu8YRDgrPGW07sOM1PvH6Nlv7HjR7Iu3w5luzYpvs/exec', // <-- Coloca tu URL aquí
+                archivos: [],
+                categorias: ['Manuales', 'Formatos', 'Leyes/Normas', 'Imágenes', 'Otros'],
+                buscar: '',
+                catSeleccionada: '',
+                cargando: true,
+                subiendo: false,
+                abrirModal: false,
+                error: '',
+                form: { titulo: '', categoria: '', descripcion: '', file: null },
+
+                init() {
+                    this.obtenerArchivos();
+                },
+
+                async obtenerArchivos() {
+                    try {
+                        const res = await fetch(this.WEB_APP_URL, {
+                            method: 'POST',
+                            mode: 'cors',
+                            body: JSON.stringify({ action: 'obtenerArchivos' })
+                        });
+                        const respuesta = await res.json();
+                        if(respuesta.status === "success") {
+                            this.archivos = respuesta.data;
+                        } else {
+                            this.error = respuesta.message;
+                        }
+                    } catch (e) {
+                        this.error = "Error al conectar con la base de datos.";
+                    } finally {
+                        this.cargando = false;
+                    }
+                },
+
+                procesarArchivo(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        this.form.file = {
+                            base64: reader.result,
+                            type: file.type,
+                            name: file.name
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                },
+
+                async subirArchivo() {
+                    if(!this.form.file) return alert("Por favor selecciona un archivo.");
+                    this.subiendo = true;
+                    this.error = '';
+                    
+                    try {
+                        const res = await fetch(this.WEB_APP_URL, {
+                            method: 'POST',
+                            mode: 'cors',
+                            body: JSON.stringify({
+                                action: 'subirArchivo',
+                                titulo: this.form.titulo,
+                                categoria: this.form.categoria,
+                                descripcion: this.form.descripcion,
+                                file: this.form.file
+                            })
+                        });
+                        const respuesta = await res.json();
+                        if(respuesta.status === "success") {
+                            this.abrirModal = false;
+                            // Limpiar formulario
+                            this.form = { titulo: '', categoria: '', descripcion: '', file: null };
+                            // Recargar lista
+                            this.cargando = true;
+                            await this.obtenerArchivos();
+                        } else {
+                            alert("Error: " + respuesta.message);
+                        }
+                    } catch (e) {
+                        alert("Error al subir el archivo.");
+                    } finally {
+                        this.subiendo = false;
+                    }
+                },
+
+                archivosFiltrados() {
+                    return this.archivos.filter(item => {
+                        const cumpleFiltroText = item.titulo.toLowerCase().includes(this.buscar.toLowerCase()) ||
+                                                 item.id.toLowerCase().includes(this.buscar.toLowerCase()) ||
+                                                 item.descripcion.toLowerCase().includes(this.buscar.toLowerCase());
+                        const cumpleCat = this.catSeleccionada === '' || item.categoria === this.catSeleccionada;
+                        return cumpleFiltroText && cumpleCat;
+                    });
+                }
+            }
+        }
+
+        function doGet(e) {
+  return HtmlService.createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('Prueba Local de Biblioteca')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+    </script>
+</body>
+</html>
