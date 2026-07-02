@@ -318,17 +318,25 @@
 
                 async descargarArchivo(item) {
                     try {
-                        const res = await fetch(`${this.WEB_APP_URL}?fileId=${encodeURIComponent(item.url)}`);
+                        const res = await fetch(this.WEB_APP_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'descargarArchivo',
+                                email: this.correo,
+                                fileId: item.url
+                            })
+                        });
                         const respuesta = await res.json();
                         if (respuesta.status !== 'success') {
                             return alert(respuesta.message || 'No se pudo descargar el archivo.');
                         }
 
-                        const blob = this.base64ToBlob(respuesta.base64, respuesta.mimeType);
+                        const blob = this.base64ToBlob(respuesta.data.base64, respuesta.data.mimeType);
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = respuesta.fileName;
+                        a.download = respuesta.data.fileName;
                         document.body.appendChild(a);
                         a.click();
                         URL.revokeObjectURL(url);
