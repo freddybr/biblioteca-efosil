@@ -102,9 +102,9 @@
                         
                         <div class="flex justify-between items-center pt-3 border-t border-gray-50 text-[11px] text-gray-400">
                             <span x-text="'Por: ' + item.usuario.split('@')[0]"></span>
-                            <a :href="WEB_APP_URL + '?fileId=' + item.url" target="_blank" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
-    Ver archivo 🚀
-</a>
+                            <a :href="WEB_APP_URL + '?fileId=' + item.url" download target="_blank" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
+                                Ver archivo 🚀
+                            </a>
                         </div>
                     </div>
                 </template>
@@ -168,7 +168,7 @@
     <script>
         function bibliotecaApp() {
             return {
-                WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbw5qKBqq3v10_IWqZ2UZQ2gdyTQSO103-0Oxis3uD3h5nhp92HecQ4GcCboyIn1jVo/exec',
+                WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbz1cnJ8tLJlx_dqi86d3LKEFAo4zT86ZFQFKL2p96KjFfgfRcF2W7T2hMG9Q_dcAb9O/exec',
                 correo: localStorage.getItem('user_email') || '',
                 miRol: localStorage.getItem('user_rol') || 'Usuario',
                 autorizado: false,
