@@ -168,7 +168,7 @@
     <script>
         function bibliotecaApp() {
             return {
-                WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbw5qKBqq3v10_IWqZ2UZQ2gdyTQSO103-0Oxis3uD3h5nhp92HecQ4GcCboyIn1jVo/exec', // <-- Pega tu URL /exec aquí
+                WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbw5qKBqq3v10_IWqZ2UZQ2gdyTQSO103-0Oxis3uD3h5nhp92HecQ4GcCboyIn1jVo/exec',
                 correo: localStorage.getItem('user_email') || '',
                 miRol: localStorage.getItem('user_rol') || 'Usuario',
                 autorizado: false,
@@ -187,6 +187,11 @@
                 form: { titulo: '', categoria: '', area: '', tags: '', descripcion: '', file: null },
 
                 init() {
+                    // Limpieza automática para asegurar que no se use caché corrupta
+                    if (!localStorage.getItem('v2_fix_clean')) {
+                        localStorage.clear();
+                        localStorage.setItem('v2_fix_clean', 'true');
+                    }
                     if (this.correo) {
                         this.autorizado = true;
                         this.obtenerArchivos();
@@ -197,14 +202,14 @@
                     this.validando = true;
                     this.errorLogin = '';
                     try {
+                        // Cambiamos a la API estándar que Google procesa de forma nativa sin romper CORS
                         const res = await fetch(this.WEB_APP_URL, {
                             method: 'POST',
-                            mode: 'cors',
                             body: JSON.stringify({ action: 'obtenerArchivos', email: this.inputCorreo })
                         });
                         const respuesta = await res.json();
                         if (respuesta.status === "success") {
-                            this.correo = this.inputCorreo;
+                            this.correo = this.inputCorreo.trim().toLowerCase();
                             this.miRol = respuesta.rol;
                             localStorage.setItem('user_email', this.correo);
                             localStorage.setItem('user_rol', this.miRol);
@@ -222,6 +227,7 @@
 
                 logout() {
                     localStorage.clear();
+                    localStorage.setItem('v2_fix_clean', 'true');
                     this.correo = '';
                     this.miRol = 'Usuario';
                     this.autorizado = false;
@@ -234,7 +240,6 @@
                     try {
                         const res = await fetch(this.WEB_APP_URL, {
                             method: 'POST',
-                            mode: 'cors',
                             body: JSON.stringify({ action: 'obtenerArchivos', email: this.correo })
                         });
                         const respuesta = await res.json();
@@ -271,7 +276,6 @@
                     try {
                         const res = await fetch(this.WEB_APP_URL, {
                             method: 'POST',
-                            mode: 'cors',
                             body: JSON.stringify({
                                 action: 'subirArchivo',
                                 email: this.correo,
