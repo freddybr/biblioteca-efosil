@@ -211,7 +211,7 @@
                         const res = await fetch(this.WEB_APP_URL, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'obtenerArchivos', email: this.inputCorreo })
+                            body: JSON.stringify({ action: 'validarUsuario', email: this.inputCorreo })
                         });
                         const respuesta = await res.json();
                         if (respuesta.status === "success") {
@@ -224,7 +224,11 @@
                             localStorage.setItem('user_email', this.correo);
                             localStorage.setItem('user_rol', this.miRol);
                             this.autorizado = true;
-                            this.archivos = respuesta.data;
+                            if (this.puedeLeer) {
+                                await this.obtenerArchivos();
+                            } else {
+                                this.archivos = [];
+                            }
                         } else {
                             this.errorLogin = respuesta.message;
                         }
