@@ -102,9 +102,9 @@
                         
                         <div class="flex justify-between items-center pt-3 border-t border-gray-50 text-[11px] text-gray-400">
                             <span x-text="'Por: ' + item.usuario.split('@')[0]"></span>
-                            <a :href="item.url" target="_blank" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
-                                Ver archivo 🚀
-                            </a>
+                            <a :href="WEB_APP_URL + '?fileId=' + item.url" target="_blank" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
+    Ver archivo 🚀
+</a>
                         </div>
                     </div>
                 </template>
