@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans" x-data="bibliotecaApp()">
+<body class="bg-gray-50 text-gray-800 font-sans" x-data="bibliotecaApp()" x-init="init()">
 
     <div x-show="!autorizado" class="fixed inset-0 bg-gray-100 z-50 flex items-center justify-center p-4">
         <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm space-y-4">
@@ -38,7 +38,7 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <button @click="logout()" class="text-xs text-blue-200 hover:text-white underline">Salir</button>
-                    <template x-if="miRol === 'Admin'">
+                    <template x-if="puedeCrear">
                         <button @click="abrirModal = true" class="bg-white text-blue-600 px-4 py-1.5 rounded-lg font-semibold text-sm shadow hover:bg-blue-50 transition">
                             + Añadir
                         </button>
@@ -102,9 +102,9 @@
                         
                         <div class="flex justify-between items-center pt-3 border-t border-gray-50 text-[11px] text-gray-400">
                             <span x-text="'Por: ' + item.usuario.split('@')[0]"></span>
-                            <a :href="WEB_APP_URL + '?fileId=' + item.url" download target="_blank" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
+                            <button @click.prevent="descargarArchivo(item)" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
                                 Ver archivo 🚀
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </template>
@@ -184,6 +184,10 @@
                 cargando: false,
                 subiendo: false,
                 abrirModal: false,
+                puedeCrear: false,
+                puedeLeer: false,
+                puedeEditar: false,
+                puedeBorrar: false,
                 form: { titulo: '', categoria: '', area: '', tags: '', descripcion: '', file: null },
 
                 init() {
@@ -202,15 +206,19 @@
                     this.validando = true;
                     this.errorLogin = '';
                     try {
-                        // Cambiamos a la API estándar que Google procesa de forma nativa sin romper CORS
                         const res = await fetch(this.WEB_APP_URL, {
                             method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ action: 'obtenerArchivos', email: this.inputCorreo })
                         });
                         const respuesta = await res.json();
                         if (respuesta.status === "success") {
                             this.correo = this.inputCorreo.trim().toLowerCase();
                             this.miRol = respuesta.rol;
+                            this.puedeCrear = respuesta.permissions?.crear || false;
+                            this.puedeLeer = respuesta.permissions?.leer || false;
+                            this.puedeEditar = respuesta.permissions?.editar || false;
+                            this.puedeBorrar = respuesta.permissions?.borrar || false;
                             localStorage.setItem('user_email', this.correo);
                             localStorage.setItem('user_rol', this.miRol);
                             this.autorizado = true;
@@ -240,12 +248,17 @@
                     try {
                         const res = await fetch(this.WEB_APP_URL, {
                             method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ action: 'obtenerArchivos', email: this.correo })
                         });
                         const respuesta = await res.json();
                         if(respuesta.status === "success") {
                             this.archivos = respuesta.data;
                             this.miRol = respuesta.rol;
+                            this.puedeCrear = respuesta.permissions?.crear || false;
+                            this.puedeLeer = respuesta.permissions?.leer || false;
+                            this.puedeEditar = respuesta.permissions?.editar || false;
+                            this.puedeBorrar = respuesta.permissions?.borrar || false;
                             localStorage.setItem('user_rol', this.miRol);
                         }
                     } catch (e) {
@@ -276,6 +289,7 @@
                     try {
                         const res = await fetch(this.WEB_APP_URL, {
                             method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 action: 'subirArchivo',
                                 email: this.correo,
@@ -300,6 +314,38 @@
                     } finally {
                         this.subiendo = false;
                     }
+                },
+
+                async descargarArchivo(item) {
+                    try {
+                        const res = await fetch(`${this.WEB_APP_URL}?fileId=${encodeURIComponent(item.url)}`);
+                        const respuesta = await res.json();
+                        if (respuesta.status !== 'success') {
+                            return alert(respuesta.message || 'No se pudo descargar el archivo.');
+                        }
+
+                        const blob = this.base64ToBlob(respuesta.base64, respuesta.mimeType);
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = respuesta.fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        a.remove();
+                    } catch (e) {
+                        alert('Error al descargar el archivo.');
+                    }
+                },
+
+                base64ToBlob(base64, mimeType) {
+                    const bytes = atob(base64);
+                    const len = bytes.length;
+                    const buffer = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        buffer[i] = bytes.charCodeAt(i);
+                    }
+                    return new Blob([buffer], { type: mimeType });
                 },
 
                 archivosFiltrados() {
