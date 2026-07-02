@@ -228,7 +228,7 @@
                                 this.archivos = [];
                             }
                         } else {
-                            this.errorLogin = respuesta.message;
+                            this.errorLogin = respuesta.message || 'Usuario no autorizado.';
                         }
                     } catch (e) {
                         this.errorLogin = "Error al validar credenciales.";
