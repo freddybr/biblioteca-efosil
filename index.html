@@ -174,21 +174,30 @@
                     <button @click="cerrarPreviewArchivo()" class="text-gray-500 hover:text-gray-900 text-xl font-bold">&times;</button>
                 </div>
                 <div class="p-4 space-y-4">
-                    <template x-if="archivoPreview.blobUrl && archivoPreview.tipo === 'application/pdf'">
-                        <iframe :src="archivoPreview.blobUrl" class="w-full h-[70vh] border rounded-lg"></iframe>
-                    </template>
-                    <template x-if="archivoPreview.blobUrl && archivoPreview.tipo.startsWith('image/')">
-                        <img :src="archivoPreview.blobUrl" alt="Vista previa" class="w-full max-h-[70vh] object-contain rounded-lg">
-                    </template>
-                    <template x-if="archivoPreview.blobUrl && archivoPreview.tipo !== 'application/pdf' && !archivoPreview.tipo.startsWith('image/')">
-                        <div class="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
-                            No es posible mostrar vista previa para este tipo de archivo.
+                    <template x-if="previewCargando">
+                        <div class="flex flex-col items-center justify-center py-20">
+                            <div class="animate-spin h-12 w-12 rounded-full border-4 border-blue-500 border-t-transparent"></div>
+                            <p class="mt-4 text-sm text-gray-600">Cargando archivo...</p>
                         </div>
                     </template>
-                    <div class="flex justify-end gap-2">
-                        <button @click="cerrarPreviewArchivo()" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">Cerrar</button>
-                        <button @click="descargarArchivoPreview()" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Descargar</button>
-                    </div>
+
+                    <template x-if="!previewCargando">
+                        <template x-if="archivoPreview.blobUrl && archivoPreview.tipo === 'application/pdf'">
+                            <iframe :src="archivoPreview.blobUrl" class="w-full h-[70vh] border rounded-lg"></iframe>
+                        </template>
+                        <template x-if="archivoPreview.blobUrl && archivoPreview.tipo.startsWith('image/')">
+                            <img :src="archivoPreview.blobUrl" alt="Vista previa" class="w-full max-h-[70vh] object-contain rounded-lg">
+                        </template>
+                        <template x-if="archivoPreview.blobUrl && archivoPreview.tipo !== 'application/pdf' && !archivoPreview.tipo.startsWith('image/')">
+                            <div class="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
+                                No es posible mostrar vista previa para este tipo de archivo.
+                            </div>
+                        </template>
+                        <div class="flex justify-end gap-2">
+                            <button @click="cerrarPreviewArchivo()" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">Cerrar</button>
+                            <button @click="descargarArchivoPreview()" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Descargar</button>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
@@ -214,6 +223,7 @@
                 subiendo: false,
                 abrirModal: false,
                 mostrarPreviewArchivo: false,
+                previewCargando: false,
                 archivoPreview: { blobUrl: '', nombre: '', tipo: '' },
                 puedeCrear: false,
                 puedeLeer: false,
@@ -413,6 +423,10 @@
                 },
 
                 async abrirArchivo(item) {
+                    this.mostrarPreviewArchivo = true;
+                    this.previewCargando = true;
+                    this.archivoPreview = { blobUrl: '', nombre: '', tipo: '' };
+
                     try {
                         const respuesta = await this.apiPost({
                             action: 'descargarArchivo',
@@ -420,6 +434,8 @@
                             fileId: item.url
                         });
                         if (respuesta.status !== 'success') {
+                            this.mostrarPreviewArchivo = false;
+                            this.previewCargando = false;
                             return alert(respuesta.message || 'No se pudo obtener el archivo para vista previa.');
                         }
 
@@ -434,9 +450,11 @@
                             nombre: respuesta.data.fileName,
                             tipo: respuesta.data.mimeType
                         };
-                        this.mostrarPreviewArchivo = true;
                     } catch (e) {
+                        this.mostrarPreviewArchivo = false;
                         alert('Error al cargar el archivo para vista previa.');
+                    } finally {
+                        this.previewCargando = false;
                     }
                 },
 
