@@ -102,8 +102,8 @@
                         
                         <div class="flex justify-between items-center pt-3 border-t border-gray-50 text-[11px] text-gray-400">
                             <span x-text="'Por: ' + item.usuario.split('@')[0]"></span>
-                            <button @click.prevent="descargarArchivo(item)" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
-                                Ver archivo 🚀
+                            <button @click.prevent="abrirArchivo(item)" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
+                                Abrir archivo 🚀
                             </button>
                         </div>
                     </div>
@@ -163,6 +163,35 @@
                 </form>
             </div>
         </div>
+
+        <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" x-show="mostrarPreviewArchivo" x-cloak style="display: none;">
+            <div class="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden">
+                <div class="flex items-center justify-between p-4 border-b">
+                    <div>
+                        <h2 class="text-lg font-bold">Vista previa de archivo</h2>
+                        <p class="text-sm text-gray-500" x-text="archivoPreview.nombre"></p>
+                    </div>
+                    <button @click="cerrarPreviewArchivo()" class="text-gray-500 hover:text-gray-900 text-xl font-bold">&times;</button>
+                </div>
+                <div class="p-4 space-y-4">
+                    <template x-if="archivoPreview.blobUrl && archivoPreview.tipo === 'application/pdf'">
+                        <iframe :src="archivoPreview.blobUrl" class="w-full h-[70vh] border rounded-lg"></iframe>
+                    </template>
+                    <template x-if="archivoPreview.blobUrl && archivoPreview.tipo.startsWith('image/')">
+                        <img :src="archivoPreview.blobUrl" alt="Vista previa" class="w-full max-h-[70vh] object-contain rounded-lg">
+                    </template>
+                    <template x-if="archivoPreview.blobUrl && archivoPreview.tipo !== 'application/pdf' && !archivoPreview.tipo.startsWith('image/')">
+                        <div class="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
+                            No es posible mostrar vista previa para este tipo de archivo.
+                        </div>
+                    </template>
+                    <div class="flex justify-end gap-2">
+                        <button @click="cerrarPreviewArchivo()" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">Cerrar</button>
+                        <button @click="descargarArchivoPreview()" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Descargar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -184,6 +213,8 @@
                 cargando: false,
                 subiendo: false,
                 abrirModal: false,
+                mostrarPreviewArchivo: false,
+                archivoPreview: { blobUrl: '', nombre: '', tipo: '' },
                 puedeCrear: false,
                 puedeLeer: false,
                 puedeEditar: false,
@@ -381,7 +412,7 @@
                     }
                 },
 
-                async descargarArchivo(item) {
+                async abrirArchivo(item) {
                     try {
                         const respuesta = await this.apiPost({
                             action: 'descargarArchivo',
@@ -389,21 +420,42 @@
                             fileId: item.url
                         });
                         if (respuesta.status !== 'success') {
-                            return alert(respuesta.message || 'No se pudo descargar el archivo.');
+                            return alert(respuesta.message || 'No se pudo obtener el archivo para vista previa.');
                         }
 
                         const blob = this.base64ToBlob(respuesta.data.base64, respuesta.data.mimeType);
                         const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = respuesta.data.fileName;
-                        document.body.appendChild(a);
-                        a.click();
-                        URL.revokeObjectURL(url);
-                        a.remove();
+                        if (this.archivoPreview.blobUrl) {
+                            URL.revokeObjectURL(this.archivoPreview.blobUrl);
+                        }
+
+                        this.archivoPreview = {
+                            blobUrl: url,
+                            nombre: respuesta.data.fileName,
+                            tipo: respuesta.data.mimeType
+                        };
+                        this.mostrarPreviewArchivo = true;
                     } catch (e) {
-                        alert('Error al descargar el archivo.');
+                        alert('Error al cargar el archivo para vista previa.');
                     }
+                },
+
+                cerrarPreviewArchivo() {
+                    if (this.archivoPreview.blobUrl) {
+                        URL.revokeObjectURL(this.archivoPreview.blobUrl);
+                    }
+                    this.archivoPreview = { blobUrl: '', nombre: '', tipo: '' };
+                    this.mostrarPreviewArchivo = false;
+                },
+
+                descargarArchivoPreview() {
+                    if (!this.archivoPreview.blobUrl) return;
+                    const a = document.createElement('a');
+                    a.href = this.archivoPreview.blobUrl;
+                    a.download = this.archivoPreview.nombre || 'archivo';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
                 },
 
                 base64ToBlob(base64, mimeType) {
