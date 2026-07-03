@@ -191,14 +191,47 @@
                 form: { titulo: '', categoria: '', area: '', tags: '', descripcion: '', file: null },
 
                 init() {
-                    // Limpieza automática para asegurar que no se use caché corrupta
-                    if (!localStorage.getItem('v2_fix_clean')) {
-                        localStorage.clear();
-                        localStorage.setItem('v2_fix_clean', 'true');
-                    }
                     if (this.correo) {
-                        this.autorizado = true;
-                        this.obtenerArchivos();
+                        this.restaurarSesion();
+                    }
+                },
+
+                async apiPost(payload) {
+                    const res = await fetch(this.WEB_APP_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload)
+                    });
+                    return res.json();
+                },
+
+                aplicarPermisos(permissions, rol) {
+                    this.miRol = rol || 'Usuario';
+                    this.puedeCrear = !!permissions?.crear;
+                    this.puedeLeer = !!permissions?.leer;
+                    this.puedeEditar = !!permissions?.editar;
+                    this.puedeBorrar = !!permissions?.borrar;
+                    localStorage.setItem('user_rol', this.miRol);
+                },
+
+                async restaurarSesion() {
+                    this.validando = true;
+                    try {
+                        const respuesta = await this.apiPost({
+                            action: 'validarUsuario',
+                            email: this.correo
+                        });
+                        if (respuesta.status === 'success') {
+                            this.aplicarPermisos(respuesta.permissions, respuesta.rol);
+                            this.autorizado = true;
+                            await this.obtenerArchivos();
+                        } else {
+                            this.logout();
+                        }
+                    } catch (e) {
+                        this.logout();
+                    } finally {
+                        this.validando = false;
                     }
                 },
 
@@ -206,42 +239,36 @@
                     this.validando = true;
                     this.errorLogin = '';
                     try {
-                        const url = `${this.WEB_APP_URL}?action=validarUsuario&email=${encodeURIComponent(this.inputCorreo)}`;
-                        const res = await fetch(url, {
-                            method: 'GET'
+                        const respuesta = await this.apiPost({
+                            action: 'validarUsuario',
+                            email: this.inputCorreo.trim().toLowerCase()
                         });
-                        const respuesta = await res.json();
-                        if (respuesta.status === "success") {
+                        if (respuesta.status === 'success') {
                             this.correo = this.inputCorreo.trim().toLowerCase();
-                            this.miRol = respuesta.rol;
-                            this.puedeCrear = respuesta.permissions?.crear || false;
-                            this.puedeLeer = respuesta.permissions?.leer || false;
-                            this.puedeEditar = respuesta.permissions?.editar || false;
-                            this.puedeBorrar = respuesta.permissions?.borrar || false;
+                            this.aplicarPermisos(respuesta.permissions, respuesta.rol);
                             localStorage.setItem('user_email', this.correo);
-                            localStorage.setItem('user_rol', this.miRol);
                             this.autorizado = true;
-                            if (this.puedeLeer) {
-                                await this.obtenerArchivos();
-                            } else {
-                                this.archivos = [];
-                            }
+                            await this.obtenerArchivos();
                         } else {
                             this.errorLogin = respuesta.message || 'Usuario no autorizado.';
                         }
                     } catch (e) {
-                        this.errorLogin = "Error al validar credenciales.";
+                        this.errorLogin = 'Error al validar credenciales.';
                     } finally {
                         this.validando = false;
                     }
                 },
 
                 logout() {
-                    localStorage.clear();
-                    localStorage.setItem('v2_fix_clean', 'true');
+                    localStorage.removeItem('user_email');
+                    localStorage.removeItem('user_rol');
                     this.correo = '';
                     this.miRol = 'Usuario';
                     this.autorizado = false;
+                    this.puedeCrear = false;
+                    this.puedeLeer = false;
+                    this.puedeEditar = false;
+                    this.puedeBorrar = false;
                     this.archivos = [];
                     this.inputCorreo = '';
                 },
@@ -249,20 +276,16 @@
                 async obtenerArchivos() {
                     this.cargando = true;
                     try {
-                        const url = `${this.WEB_APP_URL}?action=obtenerArchivos&email=${encodeURIComponent(this.correo)}`;
-                        const res = await fetch(url, { method: 'GET' });
-                        const respuesta = await res.json();
-                        if(respuesta.status === "success") {
+                        const respuesta = await this.apiPost({
+                            action: 'obtenerArchivos',
+                            email: this.correo
+                        });
+                        if (respuesta.status === 'success') {
                             this.archivos = respuesta.data;
-                            this.miRol = respuesta.rol;
-                            this.puedeCrear = respuesta.permissions?.crear || false;
-                            this.puedeLeer = respuesta.permissions?.leer || false;
-                            this.puedeEditar = respuesta.permissions?.editar || false;
-                            this.puedeBorrar = respuesta.permissions?.borrar || false;
-                            localStorage.setItem('user_rol', this.miRol);
+                            this.aplicarPermisos(respuesta.permissions, respuesta.rol);
                         }
                     } catch (e) {
-                        console.error("Error al refrescar catálogo");
+                        console.error('Error al refrescar catálogo');
                     } finally {
                         this.cargando = false;
                     }
@@ -287,21 +310,16 @@
                     this.subiendo = true;
                     
                     try {
-                        const res = await fetch(this.WEB_APP_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify({
-                                action: 'subirArchivo',
-                                email: this.correo,
-                                titulo: this.form.titulo,
-                                categoria: this.form.categoria,
-                                area: this.form.area,
-                                tags: this.form.tags,
-                                descripcion: this.form.descripcion,
-                                file: this.form.file
-                            })
+                        const respuesta = await this.apiPost({
+                            action: 'subirArchivo',
+                            email: this.correo,
+                            titulo: this.form.titulo,
+                            categoria: this.form.categoria,
+                            area: this.form.area,
+                            tags: this.form.tags,
+                            descripcion: this.form.descripcion,
+                            file: this.form.file
                         });
-                        const respuesta = await res.json();
                         if(respuesta.status === "success") {
                             this.abrirModal = false;
                             this.form = { titulo: '', categoria: '', area: '', tags: '', descripcion: '', file: null };
@@ -318,16 +336,11 @@
 
                 async descargarArchivo(item) {
                     try {
-                        const res = await fetch(this.WEB_APP_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify({
-                                action: 'descargarArchivo',
-                                email: this.correo,
-                                fileId: item.url
-                            })
+                        const respuesta = await this.apiPost({
+                            action: 'descargarArchivo',
+                            email: this.correo,
+                            fileId: item.url
                         });
-                        const respuesta = await res.json();
                         if (respuesta.status !== 'success') {
                             return alert(respuesta.message || 'No se pudo descargar el archivo.');
                         }
