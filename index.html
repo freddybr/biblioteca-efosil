@@ -183,10 +183,10 @@
           </a>
 
           <template x-if="usuario.permissions.editar">
-            <button @click="alert('Función de edición en desarrollo para ID: ' + itemDetalle.id)" class="px-4 py-2 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition">Editar</button>
+            <button @click="activarEdicion()" class="px-4 py-2 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition">Editar</button>
           </template>
           <template x-if="usuario.permissions.borrar">
-            <button @click="alert('Función de eliminación en desarrollo para ID: ' + itemDetalle.id)" class="px-4 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition">Eliminar</button>
+            <button @click="ejecutarEliminacion()" class="px-4 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition">Eliminar</button>
           </template>
         </div>
       </div>
@@ -268,7 +268,7 @@
 
   <script>
     // URL DE LA WEB APP PUBLICADA EN GOOGLE APPS SCRIPT
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOdU8KKZNHcwz37UppZsyN22xfPGecbvUL7TGczeMi2oYuwkQ9EUOuZ_0EGVu0EyXT/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbymLhJSC2CvNTMtYM5iR5haQR_K5mZZ0Amp5vGVACrf5a3bpKlu9fl8ntl7SAe9Osqn/exec";
 
     // FUNCIÓN GLOBAL AUXILIAR: Resuelve las consultas (GET) usando JSONP puro y seguro
     function ejecutarPeticionJSONP(action, params = {}) {
@@ -327,6 +327,9 @@
         modalAñadir: false,
         modalDetalles: false, // NUEVO: Estado del modal informativo
         itemDetalle: {},      // NUEVO: Almacena el objeto de archivo seleccionado
+        editando: false,
+        guardandoCambios: false,
+        formEdicion: { id: '', titulo: '', descripcion: '', area: '', categoria: '', tags: '' },
 
         // ... Filtros y colecciones ...
         usuario: { email: '', rol: '', permissions: { crear: false, leer: false, editar: false, borrar: false } },
@@ -398,6 +401,78 @@
           this.itemDetalle = item;
           this.modalDetalles = true;
         },
+
+        activarEdicion() {
+            // Setea el formulario de edición con los datos actuales del registro
+            this.formEdicion = {
+              id: this.itemDetalle.id,
+              titulo: this.itemDetalle.titulo,
+              descripcion: this.itemDetalle.descripcion,
+              area: this.itemDetalle.area,
+              categoria: this.itemDetalle.categoria,
+              tags: this.itemDetalle.tags
+            };
+            this.editando = true;
+          },
+
+          cancelarEdicion() {
+            this.editando = false;
+            this.formEdicion = { id: '', titulo: '', descripcion: '', area: '', categoria: '', tags: '' };
+          },
+
+          async guardarCambiosEdicion() {
+            if (!this.formEdicion.titulo) return alert('El título es obligatorio.');
+            this.guardandoCambios = true;
+
+            try {
+              const respuesta = await ejecutarPeticionJSONP('editarArchivo', {
+                email: this.usuario.email,
+                id: this.formEdicion.id,
+                titulo: this.formEdicion.titulo,
+                descripcion: this.formEdicion.descripcion,
+                area: this.formEdicion.area,
+                categoria: this.formEdicion.categoria,
+                tags: this.formEdicion.tags
+              });
+
+              if (respuesta.status === 'success') {
+                alert(respuesta.message);
+                this.modalDetalles = false;
+                this.cancelarEdicion();
+                await this.inicializarDatos(); // Recarga la tabla con el spinner
+              } else {
+                alert(respuesta.message);
+              }
+            } catch (e) {
+              alert('Error al intentar guardar los cambios desde el servidor.');
+              console.error(e);
+            } finally {
+              this.guardandoCambios = false;
+            }
+          },
+
+          async ejecutarEliminacion() {
+            const confirmar = confirm(`¿Estás completamente seguro de que deseas eliminar permanentemente el registro ${this.itemDetalle.id} y su archivo adjunto en Drive?`);
+            if (!confirmar) return;
+
+            try {
+              const respuesta = await ejecutarPeticionJSONP('eliminarArchivo', {
+                email: this.usuario.email,
+                id: this.itemDetalle.id
+              });
+
+              if (respuesta.status === 'success') {
+                alert(respuesta.message);
+                this.modalDetalles = false;
+                await this.inicializarDatos(); // Limpia la fila de la interfaz de inmediato
+              } else {
+                alert(respuesta.message);
+              }
+            } catch (e) {
+              alert('Error en el sistema al intentar eliminar.');
+              console.error(e);
+            }
+          },
 
         procesarArchivoAdjunto(event) {
           const file = event.target.files[0];
