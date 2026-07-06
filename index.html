@@ -176,10 +176,26 @@
             <label class="block font-medium text-gray-600 mb-0.5">Tags (Separados por coma)</label>
             <input type="text" x-model="nuevoForm.tags" placeholder="Finanzas, Manual" class="w-full p-2 border rounded-md">
           </div>
-          <div>
-            <label class="block font-medium text-gray-600 mb-0.5">Archivo Adjunto *</label>
-            <input type="file" required @change="procesarArchivoAdjunto($event)" class="w-full p-1 border rounded-md bg-gray-50">
-          </div>
+          <div class="mb-4">
+  <label class="block text-sm font-bold text-gray-700 mb-1">Seleccionar Archivo</label>
+  <input 
+    type="file" 
+    @change="procesarArchivoAdjunto($event)" 
+    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition"
+    required
+  />
+</div>
+
+<div class="mb-4">
+  <label class="block text-sm font-bold text-gray-700 mb-1">Título del Documento</label>
+  <input 
+    type="text" 
+    x-model="nuevoForm.titulo" 
+    placeholder="Ej. Manual de Procedimientos de Perforación" 
+    class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+    required
+  />
+</div>
 
           <div class="flex justify-end gap-2 pt-2 border-t">
             <button type="button" @click="modalAñadir = false" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md">Cancelar</button>
@@ -317,6 +333,16 @@
         procesarArchivoAdjunto(event) {
           const file = event.target.files[0];
           if (!file) return;
+
+          // 1. Extraer el nombre del archivo sin la extensión (.pdf, .xlsx, etc.)
+          const nombreOriginal = file.name;
+          const indiceExtension = nombreOriginal.lastIndexOf('.');
+          const nombreLimpio = indiceExtension !== -1 ? nombreOriginal.substring(0, indiceExtension) : nombreOriginal;
+
+          // 2. Cargar por defecto el nombre en el título permitiendo su edición posterior
+          this.nuevoForm.titulo = nombreLimpio;
+
+          // 3. Procesar y convertir a Base64 para el envío seguro a Google Drive
           const reader = new FileReader();
           reader.onload = (e) => {
             this.nuevoForm.file = {
