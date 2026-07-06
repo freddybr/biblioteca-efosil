@@ -154,40 +154,117 @@
     </main>
 
     <div x-show="modalDetalles" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak>
-      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100" @click.away="modalDetalles = false">
+      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto" @click.away="if(!editando) modalDetalles = false">
+        
         <div class="flex justify-between items-start mb-4">
           <div>
             <span class="font-mono text-xs font-black bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md" x-text="itemDetalle.id"></span>
-            <h3 class="text-xl font-bold text-gray-900 mt-2" x-text="itemDetalle.titulo"></h3>
+            <template x-if="!editando">
+              <h3 class="text-xl font-bold text-gray-900 mt-2" x-text="itemDetalle.titulo"></h3>
+            </template>
+            <template x-if="editando">
+              <div class="mt-2 w-full">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Título del Documento *</label>
+                <input type="text" x-model="formEdicion.titulo" class="w-full p-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+              </div>
+            </template>
           </div>
-          <button @click="modalDetalles = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">&times;</button>
+          <button @click="modalDetalles = false; cancelarEdicion()" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">&times;</button>
         </div>
 
-        <div class="space-y-3.5 my-4 border-t border-b border-gray-100 py-4 text-sm text-gray-700">
-          <div><span class="font-bold text-gray-500 block text-xs uppercase">Descripción:</span> <p class="text-gray-800 mt-0.5" x-text="itemDetalle.descripcion || 'Sin descripción disponible.'"></p></div>
-          <div class="grid grid-cols-2 gap-4">
-            <div><span class="font-bold text-gray-500 block text-xs uppercase">Categoría:</span> <span class="text-gray-800 font-medium" x-text="itemDetalle.categoria"></span></div>
-            <div><span class="font-bold text-gray-500 block text-xs uppercase">Área Técnica:</span> <span class="text-gray-800 font-medium" x-text="itemDetalle.area"></span></div>
+        <div class="space-y-4 my-4 border-t border-b border-gray-100 py-4 text-sm text-gray-700">
+          
+          <div>
+            <span class="font-bold text-gray-500 block text-xs uppercase mb-1">Descripción:</span>
+            <template x-if="!editando">
+              <p class="text-gray-800 bg-gray-50/50 p-2 rounded-xl" x-text="itemDetalle.descripcion || 'Sin descripción disponible.'"></p>
+            </template>
+            <template x-if="editando">
+              <textarea x-model="formEdicion.descripcion" rows="3" class="w-full p-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+            </template>
           </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div><span class="font-bold text-gray-500 block text-xs uppercase">Registrado por:</span> <span class="text-gray-600" x-text="itemDetalle.usuario"></span></div>
-            <div><span class="font-bold text-gray-500 block text-xs uppercase">Tags:</span> <span class="text-gray-600" x-text="itemDetalle.tags || 'Ninguno'"></span></div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <span class="font-bold text-gray-500 block text-xs uppercase mb-1">Categoría:</span>
+              <template x-if="!editando">
+                <span class="text-gray-800 font-medium bg-gray-50 p-2 rounded-xl block" x-text="itemDetalle.categoria"></span>
+              </template>
+              <template x-if="editando">
+                <select x-model="formEdicion.categoria" class="w-full p-2 border border-gray-300 rounded-xl bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  <template x-for="cat in categorias" :key="cat">
+                    <option :value="cat" x-text="cat" :selected="cat === formEdicion.categoria"></option>
+                  </template>
+                </select>
+              </template>
+            </div>
+
+            <div>
+              <span class="font-bold text-gray-500 block text-xs uppercase mb-1">Área Técnica:</span>
+              <template x-if="!editando">
+                <span class="text-gray-800 font-medium bg-gray-50 p-2 rounded-xl block" x-text="itemDetalle.area"></span>
+              </template>
+              <template x-if="editando">
+                <select x-model="formEdicion.area" class="w-full p-2 border border-gray-300 rounded-xl bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  <template x-for="area in areas" :key="area">
+                    <option :value="area" x-text="area" :selected="area === formEdicion.area"></option>
+                  </template>
+                </select>
+              </template>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <span class="font-bold text-gray-500 block text-xs uppercase mb-1">Registrado por:</span>
+              <span class="text-gray-600 bg-gray-50 p-2 rounded-xl block" x-text="itemDetalle.usuario"></span>
+            </div>
+            <div>
+              <span class="font-bold text-gray-500 block text-xs uppercase mb-1">Tags:</span>
+              <template x-if="!editando">
+                <span class="text-gray-600 bg-gray-50 p-2 rounded-xl block" x-text="itemDetalle.tags || 'Ninguno'"></span>
+              </template>
+              <template x-if="editando">
+                <input type="text" x-model="formEdicion.tags" placeholder="Separados por coma" class="w-full p-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+              </template>
+            </div>
           </div>
         </div>
 
         <div class="flex flex-wrap justify-end gap-2 mt-6">
-          <button @click="modalDetalles = false" class="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">Cerrar</button>
           
-          <a :href="itemDetalle.url" target="_blank" class="px-4 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition flex items-center gap-1">
-            <span>Abrir Archivo 🚀</span>
-          </a>
+          <template x-if="!editando">
+            <div class="flex gap-2 w-full sm:w-auto justify-end">
+              <button @click="modalDetalles = false" class="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">Cerrar</button>
+              
+              <a :href="itemDetalle.url" target="_blank" class="px-4 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition flex items-center gap-1">
+                <span>Abrir Archivo 🚀</span>
+              </a>
 
-          <template x-if="usuario.permissions.editar">
-            <button @click="activarEdicion()" class="px-4 py-2 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition">Editar</button>
+              <template x-if="usuario.permissions.editar">
+                <button @click="activarEdicion()" class="px-4 py-2 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition">Editar</button>
+              </template>
+              
+              <template x-if="usuario.permissions.borrar">
+                <button @click="ejecutarEliminacion()" class="px-4 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition">Eliminar</button>
+              </template>
+            </div>
           </template>
-          <template x-if="usuario.permissions.borrar">
-            <button @click="ejecutarEliminacion()" class="px-4 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition">Eliminar</button>
+
+          <template x-if="editando">
+            <div class="flex gap-2 w-full sm:w-auto justify-end">
+              <button type="button" @click="cancelarEdicion()" :disabled="guardandoCambios" class="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">
+                Cancelar
+              </button>
+              <button type="button" @click="guardarCambiosEdicion()" :disabled="guardandoCambios" class="px-4 py-2 text-sm font-bold bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-sm transition flex items-center gap-2">
+                <template x-if="guardandoCambios">
+                  <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </template>
+                <span x-text="guardandoCambios ? 'Guardando...' : 'Confirmar Cambios 💾'"></span>
+              </button>
+            </div>
           </template>
+
         </div>
       </div>
     </div>
