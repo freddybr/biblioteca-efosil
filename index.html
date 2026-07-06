@@ -199,28 +199,24 @@
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzL5TzKco-QREqas1S_C-X25CozwzN9U7g_VvRzKbyzYvLz66w5lP7xM6z_78CexbEw/exec";
 
     function bibliotecaApp() {
-      // Función interna auxiliar para asegurar la conexión JSONP sin perder el contexto 'this'
-      function ejecutarPeticionJSONP(action, params = {}) {
-        return new Promise((resolve, reject) => {
-          const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-          window[callbackName] = function(data) {
-            delete window[callbackName];
-            const script = document.getElementById(callbackName);
-            if (script) document.body.removeChild(script);
-            resolve(data);
-          };
-          
-          let url = WEB_APP_URL + '?action=' + action + '&callback=' + callbackName;
-          for (let key in params) {
-            url += '&' + key + '=' + encodeURIComponent(params[key]);
-          }
-          
-          const script = document.createElement('script');
-          script.id = callbackName;
-          script.src = url;
-          script.onerror = () => reject(new Error('Fallo en la comunicación del servidor'));
-          document.body.appendChild(script);
+      // Nueva función de comunicación ultra-robusta usando Fetch con seguimiento de redirección
+      async function consultarServidor(action, params = {}) {
+        let url = WEB_APP_URL + '?action=' + action;
+        for (let key in params) {
+          url += '&' + key + '=' + encodeURIComponent(params[key]);
+        }
+
+        const respuesta = await fetch(url, {
+          method: 'GET',
+          mode: 'cors', // Solicitud de recursos compartidos estándar
+          redirect: 'follow' // OBLIGATORIO: Permite al navegador seguir la redirección 302 de Google
         });
+
+        if (!respuesta.ok) {
+          throw new Error('Error en la respuesta del servidor: ' + respuesta.statusText);
+        }
+
+        return await respuesta.json();
       }
 
       return {
@@ -247,8 +243,8 @@
           this.conectando = true;
           
           try {
-            // Usamos la función directa para evitar el error de contexto de Alpine.js
-            const data = await ejecutarPeticionJSONP('validarUsuario', { email: this.loginEmail });
+            // Consulta directa vía Fetch optimizado
+            const data = await consultarServidor('validarUsuario', { email: this.loginEmail });
             
             if (data.status === 'success') {
               this.usuario.email = this.loginEmail.trim().toLowerCase();
@@ -256,13 +252,12 @@
               this.usuario.permissions = data.permissions;
               this.sesionIniciada = true;
               
-              // Cargar catálogos y datos de inmediato
               await this.inicializarDatos();
             } else {
               alert(data.message);
             }
           } catch (e) {
-            alert('Error de autenticación: El servidor no responde correctamente.');
+            alert('Error de conexión: No se pudo validar las credenciales con Google Apps Script.');
             console.error(e);
           } finally {
             this.conectando = false;
@@ -272,20 +267,20 @@
         async inicializarDatos() {
           this.cargando = true;
           try {
-            // 1. Cargar filtros dinámicos desde las pestañas correspondientes
-            const dataFiltros = await ejecutarPeticionJSONP('obtenerFiltrosDinamicos', { email: this.usuario.email });
+            // 1. Cargar filtros dinámicos desde Google Sheets
+            const dataFiltros = await consultarServidor('obtenerFiltrosDinamicos', { email: this.usuario.email });
             if (dataFiltros.status === 'success') {
               this.areas = dataFiltros.areas;
               this.categorias = dataFiltros.categorias;
             }
 
-            // 2. Cargar listado de archivos guardados
-            const dataArchivos = await ejecutarPeticionJSONP('obtenerArchivos', { email: this.usuario.email });
+            // 2. Cargar listado de archivos
+            const dataArchivos = await consultarServidor('obtenerArchivos', { email: this.usuario.email });
             if (dataArchivos.status === 'success') {
               this.archivos = dataArchivos.data;
             }
           } catch (error) {
-            console.error('Error al sincronizar datos del servidor:', error);
+            console.error('Error al sincronizar datos del catálogo:', error);
           } finally {
             this.cargando = false;
           }
@@ -335,7 +330,6 @@
           };
 
           try {
-            // Envío clásico POST compatible con restricciones de Google Apps Script
             await fetch(WEB_APP_URL, {
               method: 'POST',
               mode: 'no-cors',
@@ -343,11 +337,10 @@
               body: JSON.stringify(payload)
             });
             
-            alert('Documento enviado con éxito. Actualizando biblioteca...');
+            alert('Documento enviado con éxito. Sincronizando biblioteca...');
             this.modalAñadir = false;
             this.nuevoForm = { titulo: '', descripcion: '', area: '', categoria: '', tags: '', file: null };
             
-            // Forzar recarga limpia después de unos segundos para dar tiempo a procesar en Drive
             const self = this;
             setTimeout(async () => { await self.inicializarDatos(); }, 2500);
           } catch (e) {
