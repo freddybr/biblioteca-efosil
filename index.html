@@ -221,17 +221,16 @@
         async loginUsuario() {
           this.conectando = true;
           try {
-            const data = await this.llamarServidorJSONP('validarUsuario', { email: this.loginEmail }); // [cite: 2]
-            if (data.status === 'success') { // [cite: 10]
-              // Garantiza la persistencia del correo y permisos en el estado de Alpine
-              this.usuario.email = this.loginEmail.trim().toLowerCase();
-              this.usuario.rol = data.rol; // [cite: 10]
-              this.usuario.permissions = data.permissions; // [cite: 10]
+            const data = await this.llamarServidorJSONP('validarUsuario', { email: this.loginEmail });
+            if (data.status === 'success') {
+              this.usuario.email = this.loginEmail;
+              this.usuario.rol = data.rol;
+              this.usuario.permissions = data.permissions;
               this.sesionIniciada = true;
               
               await this.inicializarDatos();
             } else {
-              alert(data.message); // [cite: 9]
+              alert(data.message);
             }
           } catch (e) {
             alert('Error en login (JSONP): ' + e.toString());
