@@ -198,27 +198,40 @@
     // URL DE LA WEB APP PUBLICADA EN GOOGLE APPS SCRIPT
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzL5TzKco-QREqas1S_C-X25CozwzN9U7g_VvRzKbyzYvLz66w5lP7xM6z_78CexbEw/exec";
 
-    function bibliotecaApp() {
-      // Nueva función de comunicación ultra-robusta usando Fetch con seguimiento de redirección
-      async function consultarServidor(action, params = {}) {
-        let url = WEB_APP_URL + '?action=' + action;
+    // FUNCIÓN GLOBAL AUXILIAR: Resuelve las consultas (GET) usando JSONP puro y seguro
+    function ejecutarPeticionJSONP(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        // Generar un nombre único para el callback global
+        const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+        
+        // Definir la función en el objeto window para que Google la invoque
+        window[callbackName] = function(data) {
+          delete window[callbackName];
+          const script = document.getElementById(callbackName);
+          if (script) document.body.removeChild(script);
+          resolve(data);
+        };
+        
+        // Construir URL con la acción y el callback requerido
+        let url = WEB_APP_URL + '?action=' + action + '&callback=' + callbackName;
         for (let key in params) {
           url += '&' + key + '=' + encodeURIComponent(params[key]);
         }
+        
+        // Inyectar el tag script de manera dinámica
+        const script = document.createElement('script');
+        script.id = callbackName;
+        script.src = url;
+        script.onerror = () => {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          reject(new Error('Fallo en la comunicación del servidor (JSONP)'));
+        };
+        document.body.appendChild(script);
+      });
+    }
 
-        const respuesta = await fetch(url, {
-          method: 'GET',
-          mode: 'cors', // Solicitud de recursos compartidos estándar
-          redirect: 'follow' // OBLIGATORIO: Permite al navegador seguir la redirección 302 de Google
-        });
-
-        if (!respuesta.ok) {
-          throw new Error('Error en la respuesta del servidor: ' + respuesta.statusText);
-        }
-
-        return await respuesta.json();
-      }
-
+    function bibliotecaApp() {
       return {
         sesionIniciada: false,
         conectando: false,
@@ -243,8 +256,8 @@
           this.conectando = true;
           
           try {
-            // Consulta directa vía Fetch optimizado
-            const data = await consultarServidor('validarUsuario', { email: this.loginEmail });
+            // Llamada segura usando la función global externa
+            const data = await ejecutarPeticionJSONP('validarUsuario', { email: this.loginEmail });
             
             if (data.status === 'success') {
               this.usuario.email = this.loginEmail.trim().toLowerCase();
@@ -257,7 +270,7 @@
               alert(data.message);
             }
           } catch (e) {
-            alert('Error de conexión: No se pudo validar las credenciales con Google Apps Script.');
+            alert('Error de autenticación: Verifica tu conexión o que el script esté publicado correctamente.');
             console.error(e);
           } finally {
             this.conectando = false;
@@ -267,20 +280,20 @@
         async inicializarDatos() {
           this.cargando = true;
           try {
-            // 1. Cargar filtros dinámicos desde Google Sheets
-            const dataFiltros = await consultarServidor('obtenerFiltrosDinamicos', { email: this.usuario.email });
-            if (dataFiltros.status === 'success') {
+            // 1. Obtener listados dinámicos para los filtros desplegables
+            const dataFiltros = await ejecutarPeticionJSONP('obtenerFiltrosDinamicos', { email: this.usuario.email });
+            if (dataFiltros && dataFiltros.status === 'success') {
               this.areas = dataFiltros.areas;
               this.categorias = dataFiltros.categorias;
             }
 
-            // 2. Cargar listado de archivos
-            const dataArchivos = await consultarServidor('obtenerArchivos', { email: this.usuario.email });
-            if (dataArchivos.status === 'success') {
+            // 2. Obtener catálogo completo de archivos
+            const dataArchivos = await ejecutarPeticionJSONP('obtenerArchivos', { email: this.usuario.email });
+            if (dataArchivos && dataArchivos.status === 'success') {
               this.archivos = dataArchivos.data;
             }
           } catch (error) {
-            console.error('Error al sincronizar datos del catálogo:', error);
+            console.error('Error al sincronizar el catálogo:', error);
           } finally {
             this.cargando = false;
           }
@@ -330,6 +343,7 @@
           };
 
           try {
+            // El envío POST usa no-cors de manera segura para evitar bloqueos en subidas masivas
             await fetch(WEB_APP_URL, {
               method: 'POST',
               mode: 'no-cors',
