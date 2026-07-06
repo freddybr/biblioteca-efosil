@@ -3,182 +3,337 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Biblioteca</title>
+  <title>Mi Biblioteca Digital</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans" x-data="bibliotecaApp()" x-init="init()">
+<body class="bg-gray-100 text-gray-800 font-sans antialiased" x-data="bibliotecaApp()">
 
-  <header class="bg-blue-600 text-white px-6 py-4 shadow-md flex justify-between items-center">
-    <div>
-      <h1 class="text-2xl font-bold flex items-center gap-2">
-        📚 Mi Biblioteca
-      </h1>
-      <p class="text-xs text-blue-200" x-text="'Rol: ' + usuario.rol"></p>
-    </div>
-    <div class="flex items-center gap-4">
-      <span class="text-sm hidden sm:inline" x-text="usuario.email"></span>
-      <button @click="salir()" class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded transition">Salir</button>
-      <template x-if="usuario.permissions.crear">
-        <button @click="abrirModalAñadir()" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-1.5 rounded shadow shadow-green-700 transition flex items-center gap-1">
-          <span>+ Añadir</span>
-        </button>
-      </template>
-    </div>
-  </header>
-
-  <main class="max-w-7xl mx-auto p-4 sm:p-6">
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-4">
+  <div x-show="!sesionIniciada" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-700 to-indigo-900">
+    <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl max-w-sm w-full space-y-6">
+      <div class="text-center">
+        <span class="text-4xl">📚</span>
+        <h2 class="text-2xl font-bold text-gray-900 mt-2">Mi Biblioteca</h2>
+        <p class="text-sm text-gray-500 mt-1">Ingresa tu correo autorizado para acceder</p>
+      </div>
       
-      <div>
+      <form @submit.prevent="loginUsuario()">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Correo Electrónico</label>
+            <input 
+              type="email" 
+              required
+              x-model="loginEmail" 
+              placeholder="ejemplo@correo.com" 
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
+            >
+          </div>
+          
+          <button 
+            type="submit" 
+            :disabled="conectando"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-md flex items-center justify-center gap-2"
+          >
+            <template x-if="conectando">
+              <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </template>
+            <span x-text="conectando ? 'Validando...' : 'Iniciar Sesión'"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div x-show="sesionIniciada" class="min-h-screen flex flex-col" x-cloak>
+    
+    <header class="bg-blue-600 text-white sticky top-0 z-40 shadow-md">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div>
+          <h1 class="text-xl font-bold flex items-center gap-1.5">📚 Mi Biblioteca</h1>
+          <p class="text-[10px] text-blue-200" x-text="'Rol: ' + usuario.rol"></p>
+        </div>
+        <div class="flex items-center gap-2 sm:gap-4">
+          <template x-if="usuario.permissions.crear">
+            <button @click="modalAñadir = true" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs sm:text-sm shadow flex items-center gap-1 transition">
+              <span>+ Añadir</span>
+            </button>
+          </template>
+          <button @click="cerrarSesion()" class="text-xs bg-blue-700 hover:bg-blue-800 px-2.5 py-1.5 rounded-lg transition">Salir</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 space-y-4">
+      
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-3">
         <input 
           type="text" 
-          placeholder="Buscar por ID, título, descripción o tags..." 
-          class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
+          placeholder="Buscar por ID, título, descripción..." 
+          class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
           x-model="busqueda"
         >
-      </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-bold text-gray-400 uppercase">Filtrar por Área:</label>
+            <select x-model="filtroArea" class="w-full bg-gray-50 border border-gray-300 text-gray-700 py-1.5 px-2 rounded-lg text-xs focus:ring-2 focus:ring-blue-500">
+              <option value="">Todas las Áreas</option>
+              <template x-for="area in areas" :key="area">
+                <option :value="area" x-text="area"></option>
+              </template>
+            </select>
+          </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Filtrar por Área:</label>
-          <select 
-            x-model="filtroArea" 
-            class="w-full bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
-          >
-            <option value="">Todas las Áreas</option>
-            <template x-for="area in areas" :key="area">
-              <option :value="area" x-text="area"></option>
-            </template>
-          </select>
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Filtrar por Tipo (Categoría):</label>
-          <select 
-            x-model="filtroCategoria" 
-            class="w-full bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
-          >
-            <option value="">Todas las Categorías</option>
-            <template x-for="cat in categorias" :key="cat">
-              <option :value="cat" x-text="cat"></option>
-            </template>
-          </select>
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-bold text-gray-400 uppercase">Filtrar por Categoría:</label>
+            <select x-model="filtroCategoria" class="w-full bg-gray-50 border border-gray-300 text-gray-700 py-1.5 px-2 rounded-lg text-xs focus:ring-2 focus:ring-blue-500">
+              <option value="">Todas las Categorías</option>
+              <template x-for="cat in categorias" :key="cat">
+                <option :value="cat" x-text="cat"></option>
+              </template>
+            </select>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div x-show="cargando" class="flex flex-col items-center justify-center py-12 gap-2 text-gray-500">
-      <svg class="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      <span class="text-sm">Cargando biblioteca digital...</span>
-    </div>
+      <div x-show="cargando" class="flex flex-col items-center justify-center py-12 gap-2 text-gray-400">
+        <svg class="animate-spin h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <span class="text-xs">Sincronizando biblioteca digital...</span>
+      </div>
 
-    <div x-show="!cargando" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-      <template x-for="archivo in archivosFiltrados" :key="archivo.id">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col justify-between hover:shadow-md transition">
-          <div>
-            <div class="flex justify-between items-start gap-2 mb-3">
-              <span class="bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded text-xs" x-text="archivo.id"></span>
-              <div class="flex flex-wrap gap-1">
-                <span class="bg-emerald-50 text-emerald-700 font-medium px-2 py-0.5 rounded-full text-2xs border border-emerald-200 text-[11px]" x-text="archivo.area"></span>
-                <span class="bg-gray-100 text-gray-600 font-medium px-2 py-0.5 rounded-full text-2xs text-[11px]" x-text="archivo.categoria"></span>
+      <div x-show="!cargando" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <template x-for="archivo in archivosFiltrados" :key="archivo.id">
+          <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col justify-between hover:shadow transition">
+            <div>
+              <div class="flex justify-between items-start gap-2 mb-2">
+                <span class="bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded text-[11px]" x-text="archivo.id"></span>
+                <div class="flex flex-wrap gap-1 justify-end">
+                  <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-medium border border-emerald-100" x-text="archivo.area"></span>
+                  <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-medium" x-text="archivo.categoria"></span>
+                </div>
               </div>
+              <h3 class="text-base font-bold text-gray-900 leading-tight" x-text="archivo.titulo"></h3>
+              <p class="text-xs text-gray-500 mt-1 line-clamp-2" x-text="archivo.descripcion || 'Sin descripción disponible.'"></p>
+              
+              <template x-if="archivo.tags">
+                <div class="mt-2 flex flex-wrap gap-1">
+                  <span class="bg-purple-50 text-purple-600 text-[10px] px-1.5 py-0.5 rounded" x-text="'#' + archivo.tags"></span>
+                </div>
+              </template>
             </div>
 
-            <h3 class="text-lg font-bold text-gray-900 mb-1" x-text="archivo.titulo"></h3>
-            <p class="text-sm text-gray-500 line-clamp-2 mb-4" x-text="archivo.descripcion || 'Sin descripción.'"></p>
-            
-            <template x-if="archivo.tags">
-              <div class="flex flex-wrap gap-1 mb-4">
-                <span class="bg-purple-50 text-purple-600 text-xs px-2 py-0.5 rounded border border-purple-100" x-text="'#' + archivo.tags"></span>
-              </div>
-            </template>
+            <div class="border-t border-gray-100 pt-2.5 mt-3 flex justify-between items-center text-[11px]">
+              <span class="text-gray-400" x-text="'Por: ' + archivo.usuario.split('@')[0]"></span>
+              <a :href="archivo.url" target="_blank" class="font-bold text-blue-600 hover:text-blue-800 flex items-center gap-0.5 text-xs">
+                Abrir archivo 🚀
+              </a>
+            </div>
           </div>
+        </template>
+      </div>
+    </main>
 
-          <div class="border-t border-gray-100 pt-3 mt-2 flex justify-between items-center text-xs text-gray-400">
-            <span x-text="'Por: ' + archivo.usuario.split('@')[0]"></span>
-            <a :href="archivo.url" target="_blank" class="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800 hover:underline transition text-sm">
-              Abrir archivo 🚀
-            </a>
-          </div>
+    <div x-show="modalAñadir" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" x-cloak>
+      <div class="bg-white rounded-xl max-w-md w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="text-base font-bold text-gray-900">Registrar Nuevo Archivo</h3>
+          <button @click="modalAñadir = false" class="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
         </div>
-      </template>
+
+        <form @submit.prevent="subirNuevoArchivo()" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-medium text-gray-600 mb-0.5">Título del Documento *</label>
+            <input type="text" required x-model="nuevoForm.titulo" class="w-full p-2 border rounded-md">
+          </div>
+          <div>
+            <label class="block font-medium text-gray-600 mb-0.5">Descripción</label>
+            <textarea x-model="nuevoForm.descripcion" rows="2" class="w-full p-2 border rounded-md"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-medium text-gray-600 mb-0.5">Área *</label>
+              <select required x-model="nuevoForm.area" class="w-full p-2 border rounded-md bg-white">
+                <option value="">Selecciona...</option>
+                <template x-for="area in areas" :key="area">
+                  <option :value="area" x-text="area"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium text-gray-600 mb-0.5">Categoría *</label>
+              <select required x-model="nuevoForm.categoria" class="w-full p-2 border rounded-md bg-white">
+                <option value="">Selecciona...</option>
+                <template x-for="cat in categorias" :key="cat">
+                  <option :value="cat" x-text="cat"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block font-medium text-gray-600 mb-0.5">Tags (Separados por coma)</label>
+            <input type="text" x-model="nuevoForm.tags" placeholder="Finanzas, Manual" class="w-full p-2 border rounded-md">
+          </div>
+          <div>
+            <label class="block font-medium text-gray-600 mb-0.5">Archivo Adjunto *</label>
+            <input type="file" required @change="procesarArchivoAdjunto($event)" class="w-full p-1 border rounded-md bg-gray-50">
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t">
+            <button type="button" @click="modalAñadir = false" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md">Cancelar</button>
+            <button type="submit" :disabled="subiendo" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center gap-1">
+              <template x-if="subiendo"><svg class="animate-spin h-3 w-3 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></template>
+              <span x-text="subiendo ? 'Subiendo...' : 'Guardar'"></span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <div x-show="!cargando && archivosFiltrados.length === 0" class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
-      No se encontraron archivos que coincidan con los filtros seleccionados.
-    </div>
-  </main>
+  </div>
 
   <script>
+    // URL DE IMPLEMENTACIÓN DE LA WEB APP DE GOOGLE APPS SCRIPT
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwvXopYND0r3OVONaiGUkN6dA3morIyIH1zihjCZxj5kXBEyugin4JDlgRH2x4iia4k/exec";
+
     function bibliotecaApp() {
       return {
-        // Estado
-        usuario: { email: 'freddybr.edu@gmail.com', rol: 'Admin', permissions: { crear: true, leer: true } }, // Simulado basado en imágenes
-        archivos: [],
-        areas: [],
-        categorias: [],
+        sesionIniciada: false,
+        conectando: false,
+        cargando: false,
+        subiendo: false,
+        modalAñadir: false,
+        
+        loginEmail: '',
         busqueda: '',
         filtroArea: '',
         filtroCategoria: '',
-        cargando: false,
+        
+        usuario: { email: '', rol: '', permissions: { crear: false, leer: false } },
+        archivos: [],
+        areas: [],
+        categorias: [],
+        
+        nuevoForm: { titulo: '', descripcion: '', area: '', categoria: '', tags: '', file: null },
 
-        init() {
-          this.cargarFiltrosYDatos();
+        async loginUsuario() {
+          this.conectando = true;
+          try {
+            const res = await fetch(`${WEB_APP_URL}?action=validarUsuario&email=${encodeURIComponent(this.loginEmail)}`);
+            const data = await res.json();
+            if (data.status === 'success') {
+              this.usuario.email = this.loginEmail;
+              this.usuario.rol = data.rol;
+              this.usuario.permissions = data.permissions;
+              this.sesionIniciada = true;
+              
+              // Cargar todos los elementos de la base de datos tras loguear
+              await this.inicializarDatos();
+            } else {
+              alert(data.message);
+            }
+          } catch (e) {
+            alert('Error al conectar con el servidor: ' + e.toString());
+          } finally {
+            this.conectando = false;
+          }
         },
 
-        cargarFiltrosYDatos() {
+        async inicializarDatos() {
           this.cargando = true;
-          
-          // 1. Cargar filtros dinámicos desde las pestañas "Areas" y "Categorias" de Sheets
-          google.script.run
-            .withSuccessHandler((response) => {
-              if (response.status === 'success') {
-                this.areas = response.areas;
-                this.categorias = response.categorias;
-              }
-            })
-            .procesarAccion({ action: 'obtenerFiltrosDinamicos', email: this.usuario.email });
+          try {
+            // 1. Carga de listas dinámicas para filtros
+            const resFiltros = await fetch(`${WEB_APP_URL}?action=obtenerFiltrosDinamicos&email=${encodeURIComponent(this.usuario.email)}`);
+            const dataFiltros = await resFiltros.json();
+            if (dataFiltros.status === 'success') {
+              this.areas = dataFiltros.areas;
+              this.categorias = dataFiltros.categorias;
+            }
 
-          // 2. Cargar base de datos de archivos de la pestaña "Archivos"
-          google.script.run
-            .withSuccessHandler((response) => {
-              if (response.status === 'success') {
-                this.archivos = response.data;
-              } else {
-                alert('Error al sincronizar datos: ' + response.message);
-              }
-              this.cargando = false;
-            })
-            .withFailureHandler(() => { this.cargando = false; })
-            .procesarAccion({ action: 'obtenerArchivos', email: this.usuario.email });
+            // 2. Carga de registros de la hoja "Archivos"
+            const resArchivos = await fetch(`${WEB_APP_URL}?action=obtenerArchivos&email=${encodeURIComponent(this.usuario.email)}`);
+            const dataArchivos = await resArchivos.json();
+            if (dataArchivos.status === 'success') {
+              this.archivos = dataArchivos.data;
+            }
+          } catch (error) {
+            console.error('Error sincronizando la base de datos', error);
+          } finally {
+            this.cargando = false;
+          }
         },
 
-        // Lógica del filtro en tiempo real combinando inputs y selectores
         get archivosFiltrados() {
-          return this.archivos.filter(archivo => {
-            const matchesBusqueda = !this.busqueda || 
-              archivo.id.toLowerCase().includes(this.busqueda.toLowerCase()) ||
-              archivo.titulo.toLowerCase().includes(this.busqueda.toLowerCase()) ||
-              (archivo.descripcion && archivo.descripcion.toLowerCase().includes(this.busqueda.toLowerCase())) ||
-              (archivo.tags && archivo.tags.toLowerCase().includes(this.busqueda.toLowerCase()));
+          return this.archivos.filter(item => {
+            const matchTxt = !this.busqueda || 
+              item.id.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+              item.titulo.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+              (item.descripcion && item.descripcion.toLowerCase().includes(this.busqueda.toLowerCase())) ||
+              (item.tags && item.tags.toLowerCase().includes(this.busqueda.toLowerCase()));
 
-            const matchesArea = !this.filtroArea || archivo.area === this.filtroArea;
-            const matchesCategoria = !this.filtroCategoria || archivo.categoria === this.filtroCategoria;
+            const matchArea = !this.filtroArea || item.area === this.filtroArea;
+            const matchCat = !this.filtroCategoria || item.categoria === this.filtroCategoria;
 
-            return matchesBusqueda && matchesArea && matchesCategoria;
+            return matchTxt && matchArea && matchCat;
           });
         },
 
-        abrirModalAñadir() {
-          alert('Función nativa para abrir formulario de carga (.subirArchivo)');
+        procesarArchivoAdjunto(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.nuevoForm.file = {
+              type: file.type,
+              base64: e.target.result
+            };
+          };
+          reader.readAsDataURL(file);
         },
 
-        salir() {
-          alert('Sesión cerrada');
+        async subirNuevoArchivo() {
+          if (!this.nuevoForm.file) return alert('Por favor, seleccione un archivo');
+          this.subiendo = true;
+          
+          const payload = {
+            action: 'subirArchivo',
+            email: this.usuario.email,
+            titulo: this.nuevoForm.titulo,
+            descripcion: this.nuevoForm.descripcion,
+            area: this.nuevoForm.area,
+            categoria: this.nuevoForm.categoria,
+            tags: this.nuevoForm.tags,
+            file: this.nuevoForm.file
+          };
+
+          try {
+            const response = await fetch(WEB_APP_URL, {
+              method: 'POST',
+              body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+              alert('Archivo registrado con éxito.');
+              this.modalAñadir = false;
+              // Limpiar formulario
+              this.nuevoForm = { titulo: '', descripcion: '', area: '', categoria: '', tags: '', file: null };
+              // Recargar el catálogo
+              await this.inicializarDatos();
+            } else {
+              alert(data.message);
+            }
+          } catch (e) {
+            alert('Error en el proceso de subida: ' + e.toString());
+          } finally {
+            this.subiendo = false;
+          }
+        },
+
+        cerrarSesion() {
+          this.sesionIniciada = false;
+          this.usuario = { email: '', rol: '', permissions: { crear: false, leer: false } };
+          this.archivos = [];
+          this.loginEmail = '';
         }
       }
     }
