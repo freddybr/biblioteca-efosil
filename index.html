@@ -48,18 +48,20 @@
   <div x-show="sesionIniciada" class="min-h-screen flex flex-col" x-cloak>
     
     <header class="bg-blue-600 text-white sticky top-0 z-40 shadow-md">
-      <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center gap-4">
         <div>
-          <h1 class="text-xl font-bold flex items-center gap-1.5">📚 Mi Biblioteca</h1>
-          <p class="text-[10px] text-blue-200" x-text="'Rol: ' + usuario.rol"></p>
+          <h1 class="text-lg sm:text-2xl font-black tracking-tight flex items-center gap-2">Mi Biblioteca</h1>
+          <p class="text-[10px] sm:text-xs text-blue-200 font-medium tracking-wide flex items-center gap-1">
+            <span>👤 Usuario:</span>
+            <span class="sm:hidden" x-text="usuario.email.split('@')[0]"></span> <span class="hidden sm:inline" x-text="usuario.email"></span>       </p>
         </div>
-        <div class="flex items-center gap-2 sm:gap-4">
+        <div class="flex items-center gap-2 sm:gap-3">
           <template x-if="usuario.permissions.crear">
-            <button @click="modalAñadir = true" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs sm:text-sm shadow flex items-center gap-1 transition">
+            <button @click="modalAñadir = true" class="bg-green-500 hover:bg-green-600 text-white font-bold px-3 py-2 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg flex items-center gap-1 transition">
               <span>+ Añadir</span>
             </button>
           </template>
-          <button @click="cerrarSesion()" class="text-xs bg-blue-700 hover:bg-blue-800 px-2.5 py-1.5 rounded-lg transition">Salir</button>
+          <button @click="cerrarSesion()" class="text-xs font-semibold bg-blue-700 hover:bg-blue-800 px-3 py-2 rounded-xl border border-blue-500/30 transition">Salir</button>
         </div>
       </div>
     </header>
@@ -219,21 +221,20 @@
         async loginUsuario() {
           this.conectando = true;
           try {
-            const res = await fetch(`${WEB_APP_URL}?action=validarUsuario&email=${encodeURIComponent(this.loginEmail)}`);
-            const data = await res.json();
-            if (data.status === 'success') {
-              this.usuario.email = this.loginEmail;
-              this.usuario.rol = data.rol;
-              this.usuario.permissions = data.permissions;
+            const data = await this.llamarServidorJSONP('validarUsuario', { email: this.loginEmail }); // [cite: 2]
+            if (data.status === 'success') { // [cite: 10]
+              // Garantiza la persistencia del correo y permisos en el estado de Alpine
+              this.usuario.email = this.loginEmail.trim().toLowerCase();
+              this.usuario.rol = data.rol; // [cite: 10]
+              this.usuario.permissions = data.permissions; // [cite: 10]
               this.sesionIniciada = true;
               
-              // Cargar todos los elementos de la base de datos tras loguear
               await this.inicializarDatos();
             } else {
-              alert(data.message);
+              alert(data.message); // [cite: 9]
             }
           } catch (e) {
-            alert('Error al conectar con el servidor: ' + e.toString());
+            alert('Error en login (JSONP): ' + e.toString());
           } finally {
             this.conectando = false;
           }
