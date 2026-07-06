@@ -1,506 +1,187 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biblioteca Centralizada</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Biblioteca</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans" x-data="bibliotecaApp()" x-init="init()">
-  
-    <div x-show="!autorizado" class="fixed inset-0 bg-gray-100 z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm space-y-4">
-            <div class="text-center">
-                <span class="text-4xl">🔐</span>
-                <h2 class="text-xl font-bold mt-2 text-gray-900">Acceso Requerido</h2>
-                <p class="text-xs text-gray-500 mt-1">Introduce tu correo electrónico autorizado.</p>
-            </div>
-            <form @submit.prevent="login()">
-                <div class="space-y-3">
-                    <input type="email" x-model="inputCorreo" required placeholder="correo@ejemplo.com"
-                           class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none">
-                    <button type="submit" :disabled="validando"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl font-bold text-sm transition disabled:bg-gray-400"
-                            x-text="validando ? 'Verificando...' : 'Ingresar'"></button>
-                </div>
-            </form>
-            <div x-show="errorLogin" class="text-red-600 bg-red-50 text-xs p-3 rounded-lg text-center" x-text="errorLogin"></div>
+
+  <header class="bg-blue-600 text-white px-6 py-4 shadow-md flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-bold flex items-center gap-2">
+        📚 Mi Biblioteca
+      </h1>
+      <p class="text-xs text-blue-200" x-text="'Rol: ' + usuario.rol"></p>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="text-sm hidden sm:inline" x-text="usuario.email"></span>
+      <button @click="salir()" class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded transition">Salir</button>
+      <template x-if="usuario.permissions.crear">
+        <button @click="abrirModalAñadir()" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-1.5 rounded shadow shadow-green-700 transition flex items-center gap-1">
+          <span>+ Añadir</span>
+        </button>
+      </template>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 sm:p-6">
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-4">
+      
+      <div>
+        <input 
+          type="text" 
+          placeholder="Buscar por ID, título, descripción o tags..." 
+          class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm"
+          x-model="busqueda"
+        >
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Filtrar por Área:</label>
+          <select 
+            x-model="filtroArea" 
+            class="w-full bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
+          >
+            <option value="">Todas las Áreas</option>
+            <template x-for="area in areas" :key="area">
+              <option :value="area" x-text="area"></option>
+            </template>
+          </select>
         </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Filtrar por Tipo (Categoría):</label>
+          <select 
+            x-model="filtroCategoria" 
+            class="w-full bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
+          >
+            <option value="">Todas las Categorías</option>
+            <template x-for="cat in categorias" :key="cat">
+              <option :value="cat" x-text="cat"></option>
+            </template>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <div x-show="autorizado" style="display: none;">
-        <header class="bg-blue-600 text-white shadow-md sticky top-0 z-40">
-            <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight">📚 Mi Biblioteca</h1>
-                    <p class="text-[10px] text-blue-200" x-text="'Rol: ' + miRol"></p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button @click="logout()" class="text-xs text-blue-200 hover:text-white underline">Salir</button>
-                    <template x-if="puedeCrear">
-                        <button @click="abrirModal = true" class="bg-white text-blue-600 px-4 py-1.5 rounded-lg font-semibold text-sm shadow hover:bg-blue-50 transition">
-                            + Añadir
-                        </button>
-                    </template>
-                </div>
-            </div>
-        </header>
-
-        <main class="max-w-4xl mx-auto px-4 py-6">
-            <div class="mb-6 space-y-3">
-                <input type="text" x-model="buscar" placeholder="Buscar por ID, título, descripción o tags..." 
-                       class="w-full px-4 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
-                
-                <div>
-                    <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Filtrar por Área:</label>
-                    <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-                        <template x-for="a in areas" :key="a">
-                            <button @click="areaSeleccionada = (areaSeleccionada === a) ? '' : a"
-                                    :class="areaSeleccionada === a ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-gray-200'"
-                                    class="px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap shadow-sm transition"
-                                    x-text="a"></button>
-                        </template>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Filtrar por Tipo:</label>
-                    <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-                        <template x-for="cat in categorias" :key="cat">
-                            <button @click="catSeleccionada = (catSeleccionada === cat) ? '' : cat"
-                                    :class="catSeleccionada === cat ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200'"
-                                    class="px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap shadow-sm transition"
-                                    x-text="cat"></button>
-                        </template>
-                    </div>
-                </div>
-            </div>
-
-            <div x-show="cargando" class="text-center py-12 text-gray-500 font-medium">Cargando biblioteca...</div>
-
-            <div class="grid gap-4 sm:grid-cols-2" x-show="!cargando">
-                <template x-for="item in archivosFiltrados()" :key="item.id">
-                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition">
-                        <div>
-                            <div class="flex flex-wrap justify-between items-center gap-1 mb-2">
-                                <span class="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-md" x-text="item.id"></span>
-                                <div class="flex gap-1">
-                                    <span class="bg-emerald-50 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-medium" x-text="item.area"></span>
-                                    <span class="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded-full font-medium" x-text="item.categoria"></span>
-                                </div>
-                            </div>
-                            <h3 class="font-bold text-gray-900 text-base mb-1 line-clamp-2" x-text="item.titulo"></h3>
-                            <p class="text-gray-500 text-xs mb-3 line-clamp-3" x-text="item.descripcion || 'Sin descripción.'"></p>
-                            
-                            <div class="flex flex-wrap gap-1 mb-4" x-show="item.tags">
-                                <template x-for="tag in item.tags.split(',')">
-                                    <span class="bg-gray-50 text-gray-500 border border-gray-200 text-[9px] px-1.5 py-0.2 rounded" x-text="'#'+tag.trim()"></span>
-                                </template>
-                            </div>
-                        </div>
-                        
-                        <div class="flex justify-between items-center pt-3 border-t border-gray-50 text-[11px] text-gray-400">
-                            <span x-text="'Por: ' + item.usuario.split('@')[0]"></span>
-                            <button @click.prevent="abrirArchivo(item)" class="text-blue-600 font-bold text-xs hover:underline flex items-center gap-1">
-                                Abrir archivo 🚀
-                            </button>
-                        </div>
-                    </div>
-                </template>
-            </div>
-        </main>
-
-        <div class="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" x-show="abrirModal" x-transition style="display: none;">
-            <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-gray-900">Registrar en Biblioteca</h2>
-                    <button @click="abrirModal = false" class="text-gray-400 text-xl font-bold p-1">&times;</button>
-                </div>
-
-                <form @submit.prevent="subirArchivo()" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Título</label>
-                        <input type="text" x-model="form.titulo" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Categoría</label>
-                            <select x-model="form.categoria" required class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                                <option value="">Seleccione...</option>
-                                <template x-for="cat in categorias">
-                                    <option :value="cat" x-text="cat"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Área</label>
-                            <select x-model="form.area" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                                <option value="">Seleccione...</option>
-                                <template x-for="a in areas">
-                                    <option :value="a" x-text="a"></option>
-                                </template>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Tags (Palabras clave separadas por coma)</label>
-                        <input type="text" x-model="form.tags" placeholder="ej: pozo, informe, 2026" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Descripción Corta</label>
-                        <textarea x-model="form.descripcion" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Seleccionar Archivo</label>
-                        <input type="file" @change="procesarArchivo($event)" required class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    </div>
-
-                    <button type="submit" :disabled="subiendo"
-                            :class="subiendo ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'"
-                            class="w-full py-2.5 text-white font-bold text-sm rounded-lg shadow transition"
-                            x-text="subiendo ? 'Subiendo y Registrando...' : 'Guardar en Biblioteca'"></button>
-                </form>
-            </div>
-        </div>
-
-        <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" x-show="mostrarPreviewArchivo" x-cloak style="display: none;">
-            <div class="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden">
-                <div class="flex items-center justify-between p-4 border-b">
-                    <div>
-                        <h2 class="text-lg font-bold">Vista previa de archivo</h2>
-                        <p class="text-sm text-gray-500" x-text="archivoPreview.nombre"></p>
-                    </div>
-                    <button @click="cerrarPreviewArchivo()" class="text-gray-500 hover:text-gray-900 text-xl font-bold">&times;</button>
-                </div>
-                <div class="p-4 space-y-4">
-                    <template x-if="previewCargando">
-                        <div class="flex flex-col items-center justify-center py-20">
-                            <div class="animate-spin h-12 w-12 rounded-full border-4 border-blue-500 border-t-transparent"></div>
-                            <p class="mt-4 text-sm text-gray-600">Cargando archivo...</p>
-                        </div>
-                    </template>
-
-                    <template x-if="!previewCargando">
-                        <template x-if="archivoPreview.blobUrl && archivoPreview.tipo === 'application/pdf'">
-                            <iframe :src="archivoPreview.blobUrl" class="w-full h-[70vh] border rounded-lg"></iframe>
-                        </template>
-                        <template x-if="archivoPreview.blobUrl && archivoPreview.tipo.startsWith('image/')">
-                            <img :src="archivoPreview.blobUrl" alt="Vista previa" class="w-full max-h-[70vh] object-contain rounded-lg">
-                        </template>
-                        <template x-if="archivoPreview.blobUrl && archivoPreview.tipo !== 'application/pdf' && !archivoPreview.tipo.startsWith('image/')">
-                            <div class="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">
-                                No es posible mostrar vista previa para este tipo de archivo.
-                            </div>
-                        </template>
-                    </template>
-
-                    <div class="flex justify-end gap-2">
-                        <button @click="cerrarPreviewArchivo()" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">Cerrar</button>
-                        <button @click="descargarArchivoPreview()" :disabled="previewCargando || !archivoPreview.blobUrl" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">Descargar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div x-show="cargando" class="flex flex-col items-center justify-center py-12 gap-2 text-gray-500">
+      <svg class="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span class="text-sm">Cargando biblioteca digital...</span>
     </div>
 
-    <script>
-        function bibliotecaApp() {
-            return {
-                WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbx3B9EpZEAdFaCe2GhuSIEwfBE6tMbBSSLWxygRCSgQpGNjPZod8Cf-Yu80ESYsyCA4/exec',
-                correo: localStorage.getItem('user_email') || '',
-                miRol: localStorage.getItem('user_rol') || 'Usuario',
-                autorizado: false,
-                inputCorreo: '',
-                validando: false,
-                errorLogin: '',
-                archivos: [],
-                categorias: ['Manuales', 'Formatos', 'Leyes/Normas', 'Imágenes', 'Otros'],
-                areas: ['Geología y Geofísica', 'Yacimiento', 'Perforación', 'Workover y CO', 'Producción', 'Otras'],
-                buscar: '',
-                catSeleccionada: '',
-                areaSeleccionada: '',
-                cargando: false,
-                subiendo: false,
-                abrirModal: false,
-                mostrarPreviewArchivo: false,
-                previewCargando: false,
-                archivoPreview: { blobUrl: '', nombre: '', tipo: '' },
-                puedeCrear: false,
-                puedeLeer: false,
-                puedeEditar: false,
-                puedeBorrar: false,
-                form: { titulo: '', categoria: '', area: '', tags: '', descripcion: '', file: null },
+    <div x-show="!cargando" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+      <template x-for="archivo in archivosFiltrados" :key="archivo.id">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col justify-between hover:shadow-md transition">
+          <div>
+            <div class="flex justify-between items-start gap-2 mb-3">
+              <span class="bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded text-xs" x-text="archivo.id"></span>
+              <div class="flex flex-wrap gap-1">
+                <span class="bg-emerald-50 text-emerald-700 font-medium px-2 py-0.5 rounded-full text-2xs border border-emerald-200 text-[11px]" x-text="archivo.area"></span>
+                <span class="bg-gray-100 text-gray-600 font-medium px-2 py-0.5 rounded-full text-2xs text-[11px]" x-text="archivo.categoria"></span>
+              </div>
+            </div>
 
-                init() {
-                    if (this.correo) {
-                        this.restaurarSesion();
-                    }
-                },
+            <h3 class="text-lg font-bold text-gray-900 mb-1" x-text="archivo.titulo"></h3>
+            <p class="text-sm text-gray-500 line-clamp-2 mb-4" x-text="archivo.descripcion || 'Sin descripción.'"></p>
+            
+            <template x-if="archivo.tags">
+              <div class="flex flex-wrap gap-1 mb-4">
+                <span class="bg-purple-50 text-purple-600 text-xs px-2 py-0.5 rounded border border-purple-100" x-text="'#' + archivo.tags"></span>
+              </div>
+            </template>
+          </div>
 
-                async apiPost(payload) {
-                    const usaJsonPesado = !!(payload.file && payload.file.base64);
+          <div class="border-t border-gray-100 pt-3 mt-2 flex justify-between items-center text-xs text-gray-400">
+            <span x-text="'Por: ' + archivo.usuario.split('@')[0]"></span>
+            <a :href="archivo.url" target="_blank" class="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800 hover:underline transition text-sm">
+              Abrir archivo 🚀
+            </a>
+          </div>
+        </div>
+      </template>
+    </div>
 
-                    if (!usaJsonPesado) {
-                        try {
-                            return await this.apiPostFetch(payload);
-                        } catch (e) {
-                            return await this.apiGetJsonp(payload);
-                        }
-                    }
+    <div x-show="!cargando && archivosFiltrados.length === 0" class="text-center py-12 text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
+      No se encontraron archivos que coincidan con los filtros seleccionados.
+    </div>
+  </main>
 
-                    return await this.apiPostFetch(payload);
-                },
+  <script>
+    function bibliotecaApp() {
+      return {
+        // Estado
+        usuario: { email: 'freddybr.edu@gmail.com', rol: 'Admin', permissions: { crear: true, leer: true } }, // Simulado basado en imágenes
+        archivos: [],
+        areas: [],
+        categorias: [],
+        busqueda: '',
+        filtroArea: '',
+        filtroCategoria: '',
+        cargando: false,
 
-                async apiPostFetch(payload) {
-                    const res = await fetch(this.WEB_APP_URL, {
-                        method: 'POST',
-                        redirect: 'follow',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify(payload)
-                    });
-                    const text = await res.text();
-                    if (text.trim().charAt(0) === '<') {
-                        throw new Error('Respuesta invalida del servidor');
-                    }
-                    return JSON.parse(text);
-                },
+        init() {
+          this.cargarFiltrosYDatos();
+        },
 
-                apiGetJsonp(payload) {
-                    return new Promise((resolve, reject) => {
-                        const callback = 'gasCb_' + Date.now();
-                        const params = new URLSearchParams();
-                        Object.entries(payload).forEach(([key, value]) => {
-                            if (value !== undefined && value !== null) {
-                                params.append(key, String(value));
-                            }
-                        });
-                        params.append('callback', callback);
+        cargarFiltrosYDatos() {
+          this.cargando = true;
+          
+          // 1. Cargar filtros dinámicos desde las pestañas "Areas" y "Categorias" de Sheets
+          google.script.run
+            .withSuccessHandler((response) => {
+              if (response.status === 'success') {
+                this.areas = response.areas;
+                this.categorias = response.categorias;
+              }
+            })
+            .procesarAccion({ action: 'obtenerFiltrosDinamicos', email: this.usuario.email });
 
-                        window[callback] = (data) => {
-                            delete window[callback];
-                            script.remove();
-                            resolve(data);
-                        };
+          // 2. Cargar base de datos de archivos de la pestaña "Archivos"
+          google.script.run
+            .withSuccessHandler((response) => {
+              if (response.status === 'success') {
+                this.archivos = response.data;
+              } else {
+                alert('Error al sincronizar datos: ' + response.message);
+              }
+              this.cargando = false;
+            })
+            .withFailureHandler(() => { this.cargando = false; })
+            .procesarAccion({ action: 'obtenerArchivos', email: this.usuario.email });
+        },
 
-                        const script = document.createElement('script');
-                        script.src = this.WEB_APP_URL + '?' + params.toString();
-                        script.onerror = () => {
-                            delete window[callback];
-                            script.remove();
-                            reject(new Error('No se pudo conectar con el servidor'));
-                        };
-                        document.body.appendChild(script);
-                    });
-                },
+        // Lógica del filtro en tiempo real combinando inputs y selectores
+        get archivosFiltrados() {
+          return this.archivos.filter(archivo => {
+            const matchesBusqueda = !this.busqueda || 
+              archivo.id.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+              archivo.titulo.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+              (archivo.descripcion && archivo.descripcion.toLowerCase().includes(this.busqueda.toLowerCase())) ||
+              (archivo.tags && archivo.tags.toLowerCase().includes(this.busqueda.toLowerCase()));
 
-                aplicarPermisos(permissions, rol) {
-                    this.miRol = rol || 'Usuario';
-                    this.puedeCrear = !!permissions?.crear;
-                    this.puedeLeer = !!permissions?.leer;
-                    this.puedeEditar = !!permissions?.editar;
-                    this.puedeBorrar = !!permissions?.borrar;
-                    localStorage.setItem('user_rol', this.miRol);
-                },
+            const matchesArea = !this.filtroArea || archivo.area === this.filtroArea;
+            const matchesCategoria = !this.filtroCategoria || archivo.categoria === this.filtroCategoria;
 
-                async restaurarSesion() {
-                    this.validando = true;
-                    try {
-                        const respuesta = await this.apiPost({
-                            action: 'validarUsuario',
-                            email: this.correo
-                        });
-                        if (respuesta.status === 'success') {
-                            this.aplicarPermisos(respuesta.permissions, respuesta.rol);
-                            this.autorizado = true;
-                            await this.obtenerArchivos();
-                        } else {
-                            this.logout();
-                        }
-                    } catch (e) {
-                        this.logout();
-                    } finally {
-                        this.validando = false;
-                    }
-                },
+            return matchesBusqueda && matchesArea && matchesCategoria;
+          });
+        },
 
-                async login() {
-                    this.validando = true;
-                    this.errorLogin = '';
-                    try {
-                        const respuesta = await this.apiPost({
-                            action: 'validarUsuario',
-                            email: this.inputCorreo.trim().toLowerCase()
-                        });
-                        if (respuesta.status === 'success') {
-                            this.correo = this.inputCorreo.trim().toLowerCase();
-                            this.aplicarPermisos(respuesta.permissions, respuesta.rol);
-                            localStorage.setItem('user_email', this.correo);
-                            this.autorizado = true;
-                            await this.obtenerArchivos();
-                        } else {
-                            this.errorLogin = respuesta.message || 'Usuario no autorizado.';
-                        }
-                    } catch (e) {
-                        this.errorLogin = 'Error al validar credenciales.';
-                    } finally {
-                        this.validando = false;
-                    }
-                },
+        abrirModalAñadir() {
+          alert('Función nativa para abrir formulario de carga (.subirArchivo)');
+        },
 
-                logout() {
-                    localStorage.removeItem('user_email');
-                    localStorage.removeItem('user_rol');
-                    this.correo = '';
-                    this.miRol = 'Usuario';
-                    this.autorizado = false;
-                    this.puedeCrear = false;
-                    this.puedeLeer = false;
-                    this.puedeEditar = false;
-                    this.puedeBorrar = false;
-                    this.archivos = [];
-                    this.inputCorreo = '';
-                },
-
-                async obtenerArchivos() {
-                    this.cargando = true;
-                    try {
-                        const respuesta = await this.apiPost({
-                            action: 'obtenerArchivos',
-                            email: this.correo
-                        });
-                        if (respuesta.status === 'success') {
-                            this.archivos = respuesta.data;
-                            this.aplicarPermisos(respuesta.permissions, respuesta.rol);
-                        }
-                    } catch (e) {
-                        console.error('Error al refrescar catálogo');
-                    } finally {
-                        this.cargando = false;
-                    }
-                },
-
-                procesarArchivo(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        this.form.file = {
-                            base64: reader.result,
-                            type: file.type,
-                            name: file.name
-                        };
-                    };
-                    reader.readAsDataURL(file);
-                },
-
-                async subirArchivo() {
-                    if(!this.form.file) return alert("Por favor selecciona un archivo.");
-                    this.subiendo = true;
-                    
-                    try {
-                        const respuesta = await this.apiPost({
-                            action: 'subirArchivo',
-                            email: this.correo,
-                            titulo: this.form.titulo,
-                            categoria: this.form.categoria,
-                            area: this.form.area,
-                            tags: this.form.tags,
-                            descripcion: this.form.descripcion,
-                            file: this.form.file
-                        });
-                        if(respuesta.status === "success") {
-                            this.abrirModal = false;
-                            this.form = { titulo: '', categoria: '', area: '', tags: '', descripcion: '', file: null };
-                            await this.obtenerArchivos();
-                        } else {
-                            alert("Error: " + respuesta.message);
-                        }
-                    } catch (e) {
-                        alert("Error al subir el archivo.");
-                    } finally {
-                        this.subiendo = false;
-                    }
-                },
-
-                async abrirArchivo(item) {
-                    this.mostrarPreviewArchivo = true;
-                    this.previewCargando = true;
-                    this.archivoPreview = { blobUrl: '', nombre: '', tipo: '' };
-
-                    try {
-                        const respuesta = await this.apiPost({
-                            action: 'descargarArchivo',
-                            email: this.correo,
-                            fileId: item.url
-                        });
-                        if (respuesta.status !== 'success') {
-                            this.mostrarPreviewArchivo = false;
-                            this.previewCargando = false;
-                            return alert(respuesta.message || 'No se pudo obtener el archivo para vista previa.');
-                        }
-
-                        const blob = this.base64ToBlob(respuesta.data.base64, respuesta.data.mimeType);
-                        const url = URL.createObjectURL(blob);
-                        if (this.archivoPreview.blobUrl) {
-                            URL.revokeObjectURL(this.archivoPreview.blobUrl);
-                        }
-
-                        this.archivoPreview = {
-                            blobUrl: url,
-                            nombre: respuesta.data.fileName,
-                            tipo: respuesta.data.mimeType
-                        };
-                    } catch (e) {
-                        this.mostrarPreviewArchivo = false;
-                        alert('Error al cargar el archivo para vista previa.');
-                    } finally {
-                        this.previewCargando = false;
-                    }
-                },
-
-                cerrarPreviewArchivo() {
-                    if (this.archivoPreview.blobUrl) {
-                        URL.revokeObjectURL(this.archivoPreview.blobUrl);
-                    }
-                    this.archivoPreview = { blobUrl: '', nombre: '', tipo: '' };
-                    this.mostrarPreviewArchivo = false;
-                },
-
-                descargarArchivoPreview() {
-                    if (!this.archivoPreview.blobUrl) return;
-                    const a = document.createElement('a');
-                    a.href = this.archivoPreview.blobUrl;
-                    a.download = this.archivoPreview.nombre || 'archivo';
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                },
-
-                base64ToBlob(base64, mimeType) {
-                    const bytes = atob(base64);
-                    const len = bytes.length;
-                    const buffer = new Uint8Array(len);
-                    for (let i = 0; i < len; i++) {
-                        buffer[i] = bytes.charCodeAt(i);
-                    }
-                    return new Blob([buffer], { type: mimeType });
-                },
-
-                archivosFiltrados() {
-                    return this.archivos.filter(item => {
-                        const query = this.buscar.toLowerCase();
-                        const cumpleFiltroText = item.titulo.toLowerCase().includes(query) ||
-                                                 item.id.toLowerCase().includes(query) ||
-                                                 item.descripcion.toLowerCase().includes(query) ||
-                                                 (item.tags && item.tags.toLowerCase().includes(query));
-                        const cumpleCat = this.catSeleccionada === '' || item.categoria === this.catSeleccionada;
-                        const cumpleArea = this.areaSeleccionada === '' || item.area === this.areaSeleccionada;
-                        return cumpleFiltroText && cumpleCat && cumpleArea;
-                    });
-                }
-            }
+        salir() {
+          alert('Sesión cerrada');
         }
-    </script>
+      }
+    }
+  </script>
 </body>
 </html>
