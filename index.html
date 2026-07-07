@@ -9,65 +9,96 @@
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans antialiased" x-data="bibliotecaApp()">
 
-  <div x-show="!sesionIniciada" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-700 to-indigo-900">
+  <div x-show="!sesionIniciada" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-700 to-indigo-900" x-cloak>
     <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl max-w-sm w-full space-y-6">
       <div class="text-center">
-        <span class="text-4xl">📚</span>
-        <h2 class="text-2xl font-bold text-gray-900 mt-2">Mi Biblioteca</h2>
-        <p class="text-sm text-gray-500 mt-1">Ingresa tu correo autorizado para acceder</p>
+        <span class="text-4xl">🔒</span>
+        <h2 class="text-2xl font-bold text-gray-900 mt-2">Biblioteca Técnica</h2>
+        <p class="text-sm text-gray-500 mt-1">Introduce tus credenciales autorizadas</p>
       </div>
       
-      <form @submit.prevent="loginUsuario()">
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Correo Electrónico</label>
-            <input 
-              type="email" 
-              required
-              x-model="loginEmail" 
-              placeholder="ejemplo@correo.com" 
-              class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition"
-            >
-          </div>
-          
-          <button 
-            type="submit" 
-            :disabled="conectando"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-md flex items-center justify-center gap-2"
-          >
-            <template x-if="conectando">
-              <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            </template>
-            <span x-text="conectando ? 'Validando...' : 'Iniciar Sesión'"></span>
-          </button>
+      <form @submit.prevent="loginUsuario()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Correo Electrónico</label>
+          <input 
+            type="email" 
+            x-model="emailInput" 
+            required 
+            placeholder="usuario@empresa.com" 
+            class="w-full p-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition" 
+          />
         </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Contraseña</label>
+          <div class="relative">
+            <input 
+              :type="mostrarPassword ? 'text' : 'password'" 
+              x-model="password" 
+              required 
+              placeholder="••••••••" 
+              class="w-full p-3 pr-16 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 transition" 
+            />
+            <button 
+              type="button" 
+              @click="mostrarPassword = !mostrarPassword" 
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 focus:outline-none"
+              x-text="mostrarPassword ? 'Ocultar' : 'Mostrar'"
+            ></button>
+          </div>
+        </div>
+        
+        <button 
+          type="submit" 
+          :disabled="cargando" 
+          class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 text-sm mt-2"
+        >
+          <template x-if="cargando">
+            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </template>
+          <span x-text="cargando ? 'Verificando...' : 'Ingresar al Catálogo 🚀'"></span>
+        </button>
       </form>
     </div>
   </div>
 
   <div x-show="sesionIniciada" class="min-h-screen flex flex-col" x-cloak>
     
-    <header class="bg-blue-600 text-white sticky top-0 z-40 shadow-md">
-      <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center gap-4">
-        <div>
-          <h1 class="text-lg sm:text-2xl font-black tracking-tight flex items-center gap-2">Mi Biblioteca</h1>
-          <p class="text-[10px] sm:text-xs text-blue-200 font-medium tracking-wide flex items-center gap-1">
-            <span>👤 Usuario:</span>
-            <span class="sm:hidden" x-text="usuario.email.split('@')[0]"></span> <span class="hidden sm:inline" x-text="usuario.email"></span>       </p>
+    <header class="bg-white border-b border-gray-200 shadow-xs sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">📚</span>
+          <div>
+            <h1 class="text-lg font-black tracking-tight text-gray-900">Biblioteca Digital</h1>
+            <p class="text-xs text-gray-400 font-medium">Gestión del conocimiento de Hidrocarburos</p>
+          </div>
         </div>
-        <div class="flex items-center gap-2 sm:gap-3">
+
+        <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
+          <div class="text-right hidden md:block">
+            <div class="text-xs font-bold text-gray-800" x-text="usuario.email"></div>
+            <div class="text-[10px] font-black tracking-wider uppercase text-blue-600" x-text="'Rol: ' + usuario.rol"></div>
+          </div>
+          
           <template x-if="usuario.permissions.crear">
-            <button @click="modalAñadir = true" class="bg-green-500 hover:bg-green-600 text-white font-bold px-3 py-2 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg flex items-center gap-1 transition">
-              <span>+ Añadir</span>
+            <button @click="modalAñadir = true" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
+              <span>+ Añadir Archivo</span>
             </button>
           </template>
-          <button @click="cerrarSesion()" class="text-xs font-semibold bg-blue-700 hover:bg-blue-800 px-3 py-2 rounded-xl border border-blue-500/30 transition">Salir</button>
+
+          <button @click="cerrarSesion()" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-xl transition">
+            Salir
+          </button>
         </div>
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6">
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+      
+      <div class="bg-white rounded-2xl p-4 shadow-xs border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div class="w-full md:w-1/3 relative">
           <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">🔍</span>
           <input 
@@ -78,7 +109,7 @@
           />
         </div>
 
-        <div class="w-full md:w-auto flex flex-col sm:flex-row gap-3 items-center w-full md:justify-end">
+        <div class="w-full md:w-auto flex flex-col sm:flex-row gap-3 items-center md:justify-end">
           <div class="w-full sm:w-44">
             <select x-model="filtroArea" class="w-full p-2 border border-gray-200 rounded-xl bg-white text-sm text-gray-600 focus:ring-2 focus:ring-blue-500 outline-none transition">
               <option value="">Todas las Áreas</option>
@@ -98,17 +129,14 @@
           </div>
 
           <template x-if="busqueda || filtroArea || filtroCategoria">
-            <button 
-              @click="busqueda = ''; filtroArea = ''; filtroCategoria = ''" 
-              class="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl transition"
-            >
+            <button @click="busqueda = ''; filtroArea = ''; filtroCategoria = ''" class="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl transition">
               Limpiar
             </button>
           </template>
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative min-h-[250px]">
+      <div class="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden relative min-h-[250px]">
         
         <div x-show="cargando" class="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex flex-col items-center justify-center z-10 transition-all">
           <div class="animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-blue-600 mb-3"></div>
@@ -173,7 +201,6 @@
         </div>
 
         <div class="space-y-4 my-4 border-t border-b border-gray-100 py-4 text-sm text-gray-700">
-          
           <div>
             <span class="font-bold text-gray-500 block text-xs uppercase mb-1">Descripción:</span>
             <template x-if="!editando">
@@ -198,7 +225,6 @@
                 </select>
               </template>
             </div>
-
             <div>
               <span class="font-bold text-gray-500 block text-xs uppercase mb-1">Área Técnica:</span>
               <template x-if="!editando">
@@ -232,19 +258,15 @@
         </div>
 
         <div class="flex flex-wrap justify-end gap-2 mt-6">
-          
           <template x-if="!editando">
             <div class="flex gap-2 w-full sm:w-auto justify-end">
               <button @click="modalDetalles = false" class="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">Cerrar</button>
-              
               <a :href="itemDetalle.url" target="_blank" class="px-4 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition flex items-center gap-1">
                 <span>Abrir Archivo 🚀</span>
               </a>
-
               <template x-if="usuario.permissions.editar">
                 <button @click="activarEdicion()" class="px-4 py-2 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition">Editar</button>
               </template>
-              
               <template x-if="usuario.permissions.borrar">
                 <button @click="ejecutarEliminacion()" class="px-4 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition">Eliminar</button>
               </template>
@@ -253,9 +275,7 @@
 
           <template x-if="editando">
             <div class="flex gap-2 w-full sm:w-auto justify-end">
-              <button type="button" @click="cancelarEdicion()" :disabled="guardandoCambios" class="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">
-                Cancelar
-              </button>
+              <button type="button" @click="cancelarEdicion()" :disabled="guardandoCambios" class="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">Cancelar</button>
               <button type="button" @click="guardarCambiosEdicion()" :disabled="guardandoCambios" class="px-4 py-2 text-sm font-bold bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-sm transition flex items-center gap-2">
                 <template x-if="guardandoCambios">
                   <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -264,77 +284,66 @@
               </button>
             </div>
           </template>
-
         </div>
       </div>
     </div>
 
-    <div x-show="modalAñadir" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" x-cloak>
-      <div class="bg-white rounded-xl max-w-md w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div class="flex justify-between items-center border-b pb-2">
-          <h3 class="text-base font-bold text-gray-900">Registrar Nuevo Archivo</h3>
-          <button @click="modalAñadir = false" class="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
+    <div x-show="modalAñadir" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" x-cloak>
+      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100" @click.away="!subiendo && (modalAñadir = false)">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-gray-900">Subir Documento Técnico</h3>
+          <button @click="if(!subiendo) modalAñadir = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">&times;</button>
         </div>
 
-        <form @submit.prevent="subirNuevoArchivo()" class="space-y-3 text-xs">
+        <form @submit.prevent="subirNuevoArchivo()" class="space-y-4 text-sm text-gray-700">
           <div>
-            <label class="block font-medium text-gray-600 mb-0.5">Título del Documento *</label>
-            <input type="text" required x-model="nuevoForm.titulo" class="w-full p-2 border rounded-md">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Archivo Adjunto *</label>
+            <input type="file" @change="cargarArchivoLocal($event)" required :disabled="subiendo" class="w-full text-xs p-2.5 border rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
+
           <div>
-            <label class="block font-medium text-gray-600 mb-0.5">Descripción</label>
-            <textarea x-model="nuevoForm.descripcion" rows="2" class="w-full p-2 border rounded-md"></textarea>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Título del Documento *</label>
+            <input type="text" x-model="nuevoForm.titulo" required :disabled="subiendo" placeholder="Ej: Manual de Compresores Centrifugos" class="w-full p-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
-          <div class="grid grid-cols-2 gap-2">
+
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label>
+            <textarea x-model="nuevoForm.descripcion" :disabled="subiendo" rows="2" placeholder="Detalles técnicos esenciales..." class="w-full p-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block font-medium text-gray-600 mb-0.5">Área *</label>
-              <select required x-model="nuevoForm.area" class="w-full p-2 border rounded-md bg-white">
-                <option value="">Selecciona...</option>
-                <template x-for="area in areas" :key="area">
-                  <option :value="area" x-text="area"></option>
-                </template>
-              </select>
-            </div>
-            <div>
-              <label class="block font-medium text-gray-600 mb-0.5">Categoría *</label>
-              <select required x-model="nuevoForm.categoria" class="w-full p-2 border rounded-md bg-white">
-                <option value="">Selecciona...</option>
+              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría *</label>
+              <select x-model="nuevoForm.categoria" required :disabled="subiendo" class="w-full p-2 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Seleccione...</option>
                 <template x-for="cat in categorias" :key="cat">
                   <option :value="cat" x-text="cat"></option>
                 </template>
               </select>
             </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Área Técnica *</label>
+              <select x-model="nuevoForm.area" required :disabled="subiendo" class="w-full p-2 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Seleccione...</option>
+                <template x-for="area in areas" :key="area">
+                  <option :value="area" x-text="area"></option>
+                </template>
+              </select>
+            </div>
           </div>
+
           <div>
-            <label class="block font-medium text-gray-600 mb-0.5">Tags (Separados por coma)</label>
-            <input type="text" x-model="nuevoForm.tags" placeholder="Finanzas, Manual" class="w-full p-2 border rounded-md">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tags (Palabras clave)</label>
+            <input type="text" x-model="nuevoForm.tags" :disabled="subiendo" placeholder="Ej: upstream, bombas, mtto" class="w-full p-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
-          <div class="mb-4">
-  <label class="block text-sm font-bold text-gray-700 mb-1">Seleccionar Archivo</label>
-  <input 
-    type="file" 
-    @change="procesarArchivoAdjunto($event)" 
-    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition"
-    required
-  />
-</div>
 
-<div class="mb-4">
-  <label class="block text-sm font-bold text-gray-700 mb-1">Título del Documento</label>
-  <input 
-    type="text" 
-    x-model="nuevoForm.titulo" 
-    placeholder="Ej. Manual de Procedimientos de Perforación" 
-    class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-    required
-  />
-</div>
-
-          <div class="flex justify-end gap-2 pt-2 border-t">
-            <button type="button" @click="modalAñadir = false" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md">Cancelar</button>
-            <button type="submit" :disabled="subiendo" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center gap-1">
-              <template x-if="subiendo"><svg class="animate-spin h-3 w-3 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></template>
-              <span x-text="subiendo ? 'Subiendo...' : 'Guardar'"></span>
+          <div class="flex justify-end gap-2 pt-4 border-t border-gray-100">
+            <button type="button" @click="modalAñadir = false" :disabled="subiendo" class="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">Cancelar</button>
+            <button type="submit" :disabled="subiendo" class="px-5 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition flex items-center gap-1.5">
+              <template x-if="subiendo">
+                <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              </template>
+              <span x-text="subiendo ? 'Subiendo archivo...' : 'Guardar en Catálogo 🚀'"></span>
             </button>
           </div>
         </form>
@@ -344,240 +353,219 @@
   </div>
 
   <script>
-    // URL DE LA WEB APP PUBLICADA EN GOOGLE APPS SCRIPT
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbymLhJSC2CvNTMtYM5iR5haQR_K5mZZ0Amp5vGVACrf5a3bpKlu9fl8ntl7SAe9Osqn/exec";
-
-    // FUNCIÓN GLOBAL AUXILIAR: Resuelve las consultas (GET) usando JSONP puro y seguro
-    function ejecutarPeticionJSONP(action, params = {}) {
-      return new Promise((resolve, reject) => {
-        // Generar un nombre único para el callback global
-        const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-        
-        // Definir la función en el objeto window para que Google la invoque
-        window[callbackName] = function(data) {
-          delete window[callbackName];
-          const script = document.getElementById(callbackName);
-          if (script) document.body.removeChild(script);
-          resolve(data);
-        };
-        
-        // Construir URL con la acción y el callback requerido
-        let url = WEB_APP_URL + '?action=' + action + '&callback=' + callbackName;
-        for (let key in params) {
-          url += '&' + key + '=' + encodeURIComponent(params[key]);
-        }
-        
-        // Inyectar el tag script de manera dinámica
-        const script = document.createElement('script');
-        script.id = callbackName;
-        script.src = url;
-        script.onerror = () => {
-          delete window[callbackName];
-          document.body.removeChild(script);
-          reject(new Error('Fallo en la comunicación del servidor (JSONP)'));
-        };
-        document.body.appendChild(script);
-      });
-    }
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzL7K6gW_4T_7gS1TqYhR3hF7CylX4pXgN6X6T3vHmxXfN4_f1oUXW_U8nF_uXn8w/exec"; // Reemplaza por tu URL exacta de Apps Script
 
     function bibliotecaApp() {
       return {
+        // VARIABLES DE CONTROL DE SESIÓN Y VISTAS
         sesionIniciada: false,
-        conectando: false,
         cargando: false,
         subiendo: false,
-        modalAñadir: false,
-        
-        loginEmail: '',
         busqueda: '',
         filtroArea: '',
         filtroCategoria: '',
         
-        usuario: { email: '', rol: '', permissions: { crear: false, leer: false } },
-        archivos: [],
-        areas: [],
-        categorias: [],
-        
-        nuevoForm: { titulo: '', descripcion: '', area: '', categoria: '', tags: '', file: null },
+        // ELEMENTOS DE CREDENCIALES
+        emailInput: '',
+        password: '',
+        mostrarPassword: false,
 
-        // ... Variables anteriores (sesionIniciada, archivos, etc.) ...
+        // MODELOS DE DATOS
+        usuario: { email: '', rol: '', permissions: { crear: false, leer: false, editar: false, borrar: false } },
+        archivos: [],
+        categorias: ['Planos', 'Manuales', 'Procedimientos', 'Informes', 'Especificaciones'],
+        areas: ['Upstream', 'Midstream', 'Downstream', 'Seguridad', 'Mantenimiento'],
+
+        // FORMULARIOS DE MODALES
         modalAñadir: false,
-        modalDetalles: false, // NUEVO: Estado del modal informativo
-        itemDetalle: {},      // NUEVO: Almacena el objeto de archivo seleccionado
+        modalDetalles: false,
+        itemDetalle: {},
         editando: false,
         guardandoCambios: false,
+        
+        nuevoForm: { titulo: '', descripcion: '', area: '', categoria: '', tags: '', file: null },
         formEdicion: { id: '', titulo: '', descripcion: '', area: '', categoria: '', tags: '' },
 
-        // ... Filtros y colecciones ...
-        usuario: { email: '', rol: '', permissions: { crear: false, leer: false, editar: false, borrar: false } },
-
-        async loginUsuario() {
-          if (!this.loginEmail) return alert('Por favor, ingresa tu correo electrónico');
-          this.conectando = true;
-          
-          try {
-            // Llamada segura usando la función global externa
-            const data = await ejecutarPeticionJSONP('validarUsuario', { email: this.loginEmail });
-            
-            if (data.status === 'success') {
-              this.usuario.email = this.loginEmail.trim().toLowerCase();
-              this.usuario.rol = data.rol;
-              this.usuario.permissions = data.permissions;
-              this.sesionIniciada = true;
-              
-              await this.inicializarDatos();
-            } else {
-              alert(data.message);
-            }
-          } catch (e) {
-            alert('Error de autenticación: Verifica tu conexión o que el script esté publicado correctamente.');
-            console.error(e);
-          } finally {
-            this.conectando = false;
+        // MÉTODO DE INICIALIZACIÓN AUTOMÁTICA
+        async init() {
+          const emailGuardado = localStorage.getItem('userEmail');
+          if (emailGuardado) {
+            this.emailInput = emailGuardado;
+            // Opcional: El usuario debe poner su clave de nuevo por seguridad
           }
         },
 
-        async inicializarDatos() {
+        // CONTROL DE ACCESO
+        async loginUsuario() {
+          if (!this.emailInput || !this.password) {
+            alert('Por favor, rellene todos los campos.');
+            return;
+          }
           this.cargando = true;
           try {
-            // 1. Obtener listados dinámicos para los filtros desplegables
-            const dataFiltros = await ejecutarPeticionJSONP('obtenerFiltrosDinamicos', { email: this.usuario.email });
-            if (dataFiltros && dataFiltros.status === 'success') {
-              this.areas = dataFiltros.areas;
-              this.categorias = dataFiltros.categorias;
-            }
+            const respuesta = await ejecutarPeticionJSONP('validarUsuario', {
+              email: this.emailInput,
+              password: this.password
+            });
 
-            // 2. Obtener catálogo completo de archivos
-            const dataArchivos = await ejecutarPeticionJSONP('obtenerArchivos', { email: this.usuario.email });
-            if (dataArchivos && dataArchivos.status === 'success') {
-              this.archivos = dataArchivos.data;
+            if (respuesta.status === 'success') {
+              this.usuario = respuesta.usuario;
+              this.sesionIniciada = true;
+              localStorage.setItem('userEmail', this.usuario.email);
+              await this.inicializarDatos();
+            } else {
+              alert(respuesta.message);
             }
-          } catch (error) {
-            console.error('Error al sincronizar el catálogo:', error);
+          } catch (e) {
+            alert('Error crítico de conexión al validar credenciales.');
+            console.error(e);
           } finally {
             this.cargando = false;
           }
         },
 
+        cerrarSesion() {
+          this.sesionIniciada = false;
+          this.password = '';
+          this.usuario = { email: '', rol: '', permissions: { crear: false, leer: false, editar: false, borrar: false } };
+          this.archivos = [];
+        },
+
+        // MANEJO DE ARCHIVOS EN LA RED
+        async inicializarDatos() {
+          this.cargando = true;
+          try {
+            const respuesta = await ejecutarPeticionJSONP('obtenerArchivos', { email: this.usuario.email });
+            if (respuesta.status === 'success') {
+              this.archivos = respuesta.data;
+            } else {
+              alert('No se pudo cargar la biblioteca: ' + respuesta.message);
+            }
+          } catch (e) {
+            console.error('Error cargando el catálogo:', e);
+          } finally {
+            this.cargando = false;
+          }
+        },
+
+        // PROCESAMIENTO EN MEMORIA (FILTRADO)
         get archivosFiltrados() {
           return this.archivos.filter(item => {
-            const matchTxt = !this.busqueda || 
-              item.id.toLowerCase().includes(this.busqueda.toLowerCase()) ||
-              item.titulo.toLowerCase().includes(this.busqueda.toLowerCase()) ||
-              (item.descripcion && item.descripcion.toLowerCase().includes(this.busqueda.toLowerCase())) ||
-              (item.tags && item.tags.toLowerCase().includes(this.busqueda.toLowerCase()));
+            const matchesArea = !this.filtroArea || item.area === this.filtroArea;
+            const matchesCat = !this.filtroCategoria || item.categoria === this.filtroCategoria;
+            
+            const txt = String(this.busqueda).toLowerCase().trim();
+            const matchesTxt = !txt || 
+              String(item.id).toLowerCase().includes(txt) ||
+              String(item.titulo).toLowerCase().includes(txt) ||
+              String(item.descripcion).toLowerCase().includes(txt) ||
+              String(item.tags).toLowerCase().includes(txt);
 
-            const matchArea = !this.filtroArea || item.area === this.filtroArea;
-            const matchCat = !this.filtroCategoria || item.categoria === this.filtroCategoria;
-
-            return matchTxt && matchArea && matchCat;
+            return matchesArea && matchesCat && matchesTxt;
           });
         },
 
+        // SECCIÓN DE DETALLES Y EDICIÓN
         abrirDetalles(item) {
           this.itemDetalle = item;
           this.modalDetalles = true;
+          this.editando = false;
         },
 
         activarEdicion() {
-            // Setea el formulario de edición con los datos actuales del registro
-            this.formEdicion = {
-              id: this.itemDetalle.id,
-              titulo: this.itemDetalle.titulo,
-              descripcion: this.itemDetalle.descripcion,
-              area: this.itemDetalle.area,
-              categoria: this.itemDetalle.categoria,
-              tags: this.itemDetalle.tags
-            };
-            this.editando = true;
-          },
+          this.formEdicion = {
+            id: this.itemDetalle.id,
+            titulo: this.itemDetalle.titulo,
+            descripcion: this.itemDetalle.descripcion,
+            area: this.itemDetalle.area,
+            categoria: this.itemDetalle.categoria,
+            tags: this.itemDetalle.tags
+          };
+          this.editando = true;
+        },
 
-          cancelarEdicion() {
-            this.editando = false;
-            this.formEdicion = { id: '', titulo: '', descripcion: '', area: '', categoria: '', tags: '' };
-          },
+        cancelarEdicion() {
+          this.editando = false;
+          this.formEdicion = { id: '', titulo: '', descripcion: '', area: '', categoria: '', tags: '' };
+        },
 
-          async guardarCambiosEdicion() {
-            if (!this.formEdicion.titulo) return alert('El título es obligatorio.');
-            this.guardandoCambios = true;
+        async guardarCambiosEdicion() {
+          if (!this.formEdicion.titulo) return alert('El título es obligatorio.');
+          this.guardandoCambios = true;
 
-            try {
-              const respuesta = await ejecutarPeticionJSONP('editarArchivo', {
-                email: this.usuario.email,
-                id: this.formEdicion.id,
-                titulo: this.formEdicion.titulo,
-                descripcion: this.formEdicion.descripcion,
-                area: this.formEdicion.area,
-                categoria: this.formEdicion.categoria,
-                tags: this.formEdicion.tags
-              });
+          try {
+            const respuesta = await ejecutarPeticionJSONP('editarArchivo', {
+              email: this.usuario.email,
+              id: this.formEdicion.id,
+              titulo: this.formEdicion.titulo,
+              descripcion: this.formEdicion.descripcion,
+              area: this.formEdicion.area,
+              categoria: this.formEdicion.categoria,
+              tags: this.formEdicion.tags
+            });
 
-              if (respuesta.status === 'success') {
-                alert(respuesta.message);
-                this.modalDetalles = false;
-                this.cancelarEdicion();
-                await this.inicializarDatos(); // Recarga la tabla con el spinner
-              } else {
-                alert(respuesta.message);
-              }
-            } catch (e) {
-              alert('Error al intentar guardar los cambios desde el servidor.');
-              console.error(e);
-            } finally {
-              this.guardandoCambios = false;
+            if (respuesta.status === 'success') {
+              alert(respuesta.message);
+              this.modalDetalles = false;
+              this.cancelarEdicion();
+              await this.inicializarDatos();
+            } else {
+              alert(respuesta.message);
             }
-          },
+          } catch (e) {
+            alert('Error al intentar guardar los cambios.');
+            console.error(e);
+          } finally {
+            this.guardandoCambios = false;
+          }
+        },
 
-          async ejecutarEliminacion() {
-            const confirmar = confirm(`¿Estás completamente seguro de que deseas eliminar permanentemente el registro ${this.itemDetalle.id} y su archivo adjunto en Drive?`);
-            if (!confirmar) return;
+        async ejecutarEliminacion() {
+          const confirmar = confirm(`¿Estás completamente seguro de que deseas eliminar permanentemente el registro ${this.itemDetalle.id} y su archivo adjunto?`);
+          if (!confirmar) return;
 
-            try {
-              const respuesta = await ejecutarPeticionJSONP('eliminarArchivo', {
-                email: this.usuario.email,
-                id: this.itemDetalle.id
-              });
+          try {
+            const respuesta = await ejecutarPeticionJSONP('eliminarArchivo', {
+              email: this.usuario.email,
+              id: this.itemDetalle.id
+            });
 
-              if (respuesta.status === 'success') {
-                alert(respuesta.message);
-                this.modalDetalles = false;
-                await this.inicializarDatos(); // Limpia la fila de la interfaz de inmediato
-              } else {
-                alert(respuesta.message);
-              }
-            } catch (e) {
-              alert('Error en el sistema al intentar eliminar.');
-              console.error(e);
+            if (respuesta.status === 'success') {
+              alert(respuesta.message);
+              this.modalDetalles = false;
+              await this.inicializarDatos();
+            } else {
+              alert(respuesta.message);
             }
-          },
+          } catch (e) {
+            alert('Error en el sistema al intentar eliminar.');
+            console.error(e);
+          }
+        },
 
-        procesarArchivoAdjunto(event) {
+        // CARGA LOCAL Y SUBIDA DE ADJUNTOS BASE64
+        cargarArchivoLocal(event) {
           const file = event.target.files[0];
           if (!file) return;
 
-          // 1. Extraer el nombre del archivo sin la extensión (.pdf, .xlsx, etc.)
-          const nombreOriginal = file.name;
-          const indiceExtension = nombreOriginal.lastIndexOf('.');
-          const nombreLimpio = indiceExtension !== -1 ? nombreOriginal.substring(0, indiceExtension) : nombreOriginal;
-
-          // 2. Cargar por defecto el nombre en el título permitiendo su edición posterior
-          this.nuevoForm.titulo = nombreLimpio;
-
-          // 3. Procesar y convertir a Base64 para el envío seguro a Google Drive
           const reader = new FileReader();
           reader.onload = (e) => {
             this.nuevoForm.file = {
-              type: file.type,
-              base64: e.target.result
+              base64: e.target.result,
+              filename: file.name,
+              mimeType: file.type
             };
+            if (!this.nuevoForm.titulo) {
+              this.nuevoForm.titulo = file.name.split('.').slice(0, -1).join('.');
+            }
           };
           reader.readAsDataURL(file);
         },
 
         async subirNuevoArchivo() {
-          if (!this.nuevoForm.file) return alert('Selecciona un archivo válido');
+          if (!this.nuevoForm.file) return alert('Por favor, seleccione un archivo válido.');
           this.subiendo = true;
-          
+
           const payload = {
             action: 'subirArchivo',
             email: this.usuario.email,
@@ -590,7 +578,6 @@
           };
 
           try {
-            // El envío POST usa no-cors de manera segura para evitar bloqueos en subidas masivas
             await fetch(WEB_APP_URL, {
               method: 'POST',
               mode: 'no-cors',
@@ -609,15 +596,31 @@
           } finally {
             this.subiendo = false;
           }
-        },
-
-        cerrarSesion() {
-          this.sesionIniciada = false;
-          this.usuario = { email: '', rol: '', permissions: { crear: false, leer: false } };
-          this.archivos = [];
-          this.loginEmail = '';
         }
       }
+    }
+
+    // PASARELA DE COMUNICACIÓN GLOBAL JSONP (LIBRE DE CORS DE LECTURA)
+    function ejecutarPeticionJSONP(action, params = {}) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'jsonp_cb_' + Math.round(Math.random() * 1000000);
+        
+        window[callbackName] = function(data) {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          resolve(data);
+        };
+
+        const queryParams = new URLSearchParams({ action, ...params, callback: callbackName });
+        const script = document.createElement('script');
+        script.src = WEB_APP_URL + '?' + queryParams.toString();
+        script.onerror = () => {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          reject(new Error('Fallo en la llamada de red por JSONP'));
+        };
+        document.body.appendChild(script);
+      });
     }
   </script>
 </body>
