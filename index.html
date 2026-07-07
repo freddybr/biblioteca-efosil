@@ -4,8 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi Biblioteca Digital</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans antialiased" x-data="bibliotecaApp()">
 
@@ -67,7 +73,7 @@
 
   <div x-show="sesionIniciada" class="min-h-screen flex flex-col" x-cloak>
     
-    <header class="bg-white border-b border-gray-200 shadow-xs sticky top-0 z-40">
+    <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="text-3xl">📚</span>
@@ -83,7 +89,7 @@
             <div class="text-[10px] font-black tracking-wider uppercase text-blue-600" x-text="'Rol: ' + usuario.rol"></div>
           </div>
           
-          <template x-if="usuario.permissions.crear">
+          <template x-if="usuario.permissions && usuario.permissions.crear">
             <button @click="modalAñadir = true" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
               <span>+ Añadir Archivo</span>
             </button>
@@ -98,7 +104,7 @@
 
     <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
       
-      <div class="bg-white rounded-2xl p-4 shadow-xs border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div class="w-full md:w-1/3 relative">
           <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">🔍</span>
           <input 
@@ -136,7 +142,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden relative min-h-[250px]">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative min-h-[250px]">
         
         <div x-show="cargando" class="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex flex-col items-center justify-center z-10 transition-all">
           <div class="animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-blue-600 mb-3"></div>
@@ -168,7 +174,7 @@
                   <td class="p-4 hidden sm:table-cell text-gray-600">
                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-green-50 text-green-700" x-text="item.area"></span>
                   </td>
-                  <td class="p-4 hidden lg:table-cell text-gray-400" x-text="new Date(item.fecha).toLocaleDateString()"></td>
+                  <td class="p-4 hidden lg:table-cell text-gray-400" x-text="item.fecha ? new Date(item.fecha).toLocaleDateString() : ''"></td>
                 </tr>
               </template>
             </tbody>
@@ -185,7 +191,7 @@
       <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto" @click.away="if(!editando) modalDetalles = false">
         
         <div class="flex justify-between items-start mb-4">
-          <div>
+          <div class="w-full pr-4">
             <span class="font-mono text-xs font-black bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md" x-text="itemDetalle.id"></span>
             <template x-if="!editando">
               <h3 class="text-xl font-bold text-gray-900 mt-2" x-text="itemDetalle.titulo"></h3>
@@ -259,15 +265,15 @@
 
         <div class="flex flex-wrap justify-end gap-2 mt-6">
           <template x-if="!editando">
-            <div class="flex gap-2 w-full sm:w-auto justify-end">
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
               <button @click="modalDetalles = false" class="px-4 py-2 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">Cerrar</button>
               <a :href="itemDetalle.url" target="_blank" class="px-4 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition flex items-center gap-1">
                 <span>Abrir Archivo 🚀</span>
               </a>
-              <template x-if="usuario.permissions.editar">
+              <template x-if="usuario.permissions && usuario.permissions.editar">
                 <button @click="activarEdicion()" class="px-4 py-2 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition">Editar</button>
               </template>
-              <template x-if="usuario.permissions.borrar">
+              <template x-if="usuario.permissions && usuario.permissions.borrar">
                 <button @click="ejecutarEliminacion()" class="px-4 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm transition">Eliminar</button>
               </template>
             </div>
@@ -322,7 +328,7 @@
               </select>
             </div>
             <div>
-              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Área Técnica *</label>
+              <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Área Técnico *</label>
               <select x-model="nuevoForm.area" required :disabled="subiendo" class="w-full p-2 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
                 <option value="">Seleccione...</option>
                 <template x-for="area in areas" :key="area">
@@ -353,7 +359,8 @@
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzL7K6gW_4T_7gS1TqYhR3hF7CylX4pXgN6X6T3vHmxXfN4_f1oUXW_U8nF_uXn8w/exec"; 
+    // 1. URL REPARADA (CON LA 'Q' AL FINAL)
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxMToXsjroUaP06SdtdlD9o1vM-AERejcsls_yKcOBMO7WUQKLK6xKcjYRen5Y0RqAL/exec";
 
     function bibliotecaApp() {
       return {
@@ -370,8 +377,9 @@
 
         usuario: { email: '', rol: '', permissions: { crear: false, leer: false, editar: false, borrar: false } },
         archivos: [],
-        categorias: ['Planos', 'Manuales', 'Procedimientos', 'Informes', 'Especificaciones'],
-        areas: ['Upstream', 'Midstream', 'Downstream', 'Seguridad', 'Mantenimiento'],
+        // Busca esto en tu x-data dentro de index.html y déjalo así:
+        areas: [],
+        categorias: [],
 
         modalAñadir: false,
         modalDetalles: false,
@@ -396,7 +404,7 @@
           }
           this.cargando = true;
           try {
-            const respuesta = await ejecutarPeticionJSONP('validarUsuario', {
+            const respuesta = await this.ejecutarPeticion('validarUsuario', {
               email: this.emailInput.trim(),
               password: this.password.trim()
             });
@@ -410,7 +418,7 @@
               alert(respuesta.message);
             }
           } catch (e) {
-            alert('Error crítico de conexión al validar credenciales.');
+            alert('Error de autenticación o conexión local.');
             console.error(e);
           } finally {
             this.cargando = false;
@@ -424,23 +432,47 @@
           this.archivos = [];
         },
 
+        async abrirDetalles(item) {
+          this.itemDetalle = item;
+          this.modalDetalles = true;
+          this.editando = false;
+        },
+
         async inicializarDatos() {
           this.cargando = true;
           try {
-            const respuesta = await ejecutarPeticionJSONP('obtenerArchivos', { email: this.usuario.email });
-            if (respuesta.status === 'success') {
-              this.archivos = respuesta.data;
-            } else {
-              alert('No se pudo cargar la biblioteca: ' + respuesta.message);
+            // 1. Cargamos los registros de la biblioteca
+            const respuestaArchivos = await this.ejecutarPeticion('obtenerArchivos', { email: this.usuario.email });
+            if (respuestaArchivos.status === 'success') {
+              this.archivos = respuestaArchivos.data;
             }
+
+            // 2. Cargamos y rastreamos la respuesta de Áreas y Categorías
+            const respuestaConfig = await this.ejecutarPeticion('obtenerConfiguracion');
+            
+            // ESTO MOSTRARÁ EN TU CONSOLA DE EDGE QUÉ LLEGA EXACTAMENTE
+            console.log("Respuesta cruda del backend:", respuestaConfig);
+
+            if (respuestaConfig && respuestaConfig.status === 'success') {
+              // Validamos si las propiedades existen y contienen datos
+              this.areas = respuestaConfig.areas || [];
+              this.categorias = respuestaConfig.categorias || [];
+              
+              console.log("Áreas cargadas en Alpine:", this.areas);
+              console.log("Categorías cargadas en Alpine:", this.categorias);
+            } else {
+              console.error('El backend no respondió con success:', respuestaConfig);
+            }
+
           } catch (e) {
-            console.error('Error cargando el catálogo:', e);
+            console.error('Error cargando los datos iniciales del catálogo:', e);
           } finally {
             this.cargando = false;
           }
         },
 
         get archivosFiltrados() {
+          if (!this.archivos) return [];
           return this.archivos.filter(item => {
             const matchesArea = !this.filtroArea || item.area === this.filtroArea;
             const matchesCat = !this.filtroCategoria || item.categoria === this.filtroCategoria;
@@ -456,10 +488,11 @@
           });
         },
 
-        abrirDetalles(item) {
-          this.itemDetalle = item;
-          this.modalDetalles = true;
-          this.editando = false;
+        normalizarValorCatalogo(valor, opciones) {
+          const texto = String(valor || '').trim();
+          if (!texto) return '';
+          const encontrado = opciones.find(opcion => String(opcion).trim().toLowerCase() === texto.toLowerCase());
+          return encontrado || texto;
         },
 
         activarEdicion() {
@@ -467,8 +500,8 @@
             id: this.itemDetalle.id,
             titulo: this.itemDetalle.titulo,
             descripcion: this.itemDetalle.descripcion,
-            area: this.itemDetalle.area,
-            categoria: this.itemDetalle.categoria,
+            area: this.normalizarValorCatalogo(this.itemDetalle.area, this.areas),
+            categoria: this.normalizarValorCatalogo(this.itemDetalle.categoria, this.categorias),
             tags: this.itemDetalle.tags
           };
           this.editando = true;
@@ -484,7 +517,7 @@
           this.guardandoCambios = true;
 
           try {
-            const respuesta = await ejecutarPeticionJSONP('editarArchivo', {
+            const respuesta = await this.ejecutarPeticion('editarArchivo', {
               email: this.usuario.email,
               id: this.formEdicion.id,
               titulo: this.formEdicion.titulo,
@@ -511,11 +544,11 @@
         },
 
         async ejecutarEliminacion() {
-          const confirmar = confirm(`¿Estás completamente seguro de que deseas eliminar permanentemente el registro ${this.itemDetalle.id} y su archivo adjunto?`);
+          const confirmar = confirm(`¿Estás completamente seguro de que deseas eliminar el registro ${this.itemDetalle.id}?`);
           if (!confirmar) return;
 
           try {
-            const respuesta = await ejecutarPeticionJSONP('eliminarArchivo', {
+            const respuesta = await this.ejecutarPeticion('eliminarArchivo', {
               email: this.usuario.email,
               id: this.itemDetalle.id
             });
@@ -555,60 +588,68 @@
           if (!this.nuevoForm.file) return alert('Por favor, seleccione un archivo válido.');
           this.subiendo = true;
 
-          const payload = {
-            action: 'subirArchivo',
-            email: this.usuario.email,
-            titulo: this.nuevoForm.titulo,
-            descripcion: this.nuevoForm.descripcion,
-            area: this.nuevoForm.area,
-            categoria: this.nuevoForm.categoria,
-            tags: this.nuevoForm.tags,
-            file: this.nuevoForm.file
-          };
-
           try {
-            await fetch(WEB_APP_URL, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
+            const respuesta = await this.ejecutarPeticion('subirArchivo', {
+              email: this.usuario.email,
+              titulo: this.nuevoForm.titulo,
+              descripcion: this.nuevoForm.descripcion,
+              area: this.nuevoForm.area,
+              categoria: this.nuevoForm.categoria,
+              tags: this.nuevoForm.tags,
+              file: this.nuevoForm.file
             });
             
-            alert('Documento enviado con éxito. Sincronizando biblioteca...');
-            this.modalAñadir = false;
-            this.nuevoForm = { titulo: '', descripcion: '', area: '', categoria: '', tags: '', file: null };
-            
-            const self = this;
-            setTimeout(async () => { await self.inicializarDatos(); }, 2500);
+            if (respuesta.status === 'success' || respuesta.id) {
+              alert('Documento enviado con éxito.');
+              this.modalAñadir = false;
+              this.nuevoForm = { titulo: '', descripcion: '', area: '', categoria: '', tags: '', file: null };
+              await this.inicializarDatos();
+            } else {
+              alert('Error del servidor: ' + respuesta.message);
+            }
           } catch (e) {
-            alert('Error al intentar registrar el archivo: ' + e.toString());
+            alert('Error al intentar registrar el archivo.');
           } finally {
             this.subiendo = false;
           }
+        },
+
+        // 2. RETORNO AL MÉTODO JSONP NATIVO (CON URL CORREGIDA)
+
+        // CONEXIÓN POST DE PRODUCCIÓN (CORS COMPATIBLE CON GOOGLE APPS SCRIPT)
+        async ejecutarPeticion(action, params = {}) {
+          try {
+            // Empaquetamos la acción requerida junto con sus parámetros
+            const cuerpoPeticion = {
+              action: action,
+              ...params
+            };
+
+            // Realizamos una petición POST nativa. Usa 'text/plain' como truco clave:
+            // Esto evita que el navegador envíe una solicitud previa (OPTIONS) que Google Sheets rechaza en local.
+            const response = await fetch(WEB_APP_URL, {
+              method: 'POST',
+              mode: 'cors',
+              headers: {
+                'Content-Type': 'text/plain;charset=utf-8'
+              },
+              body: JSON.stringify(cuerpoPeticion)
+            });
+
+            if (!response.ok) {
+              throw new Error(`Error en el servidor: ${response.status}`);
+            }
+
+            // Retornamos el JSON real con los registros de la base de datos
+            const resultado = await response.json();
+            return resultado;
+
+          } catch (e) {
+            console.error('Fallo en la comunicación con la base de datos:', e);
+            throw e;
+          }
         }
       }
-    }
-
-    function ejecutarPeticionJSONP(action, params = {}) {
-      return new Promise((resolve, reject) => {
-        const callbackName = 'jsonp_cb_' + Math.round(Math.random() * 1000000);
-        
-        window[callbackName] = function(data) {
-          delete window[callbackName];
-          document.body.removeChild(script);
-          resolve(data);
-        };
-
-        const queryParams = new URLSearchParams({ action, ...params, callback: callbackName });
-        const script = document.createElement('script');
-        script.src = WEB_APP_URL + '?' + queryParams.toString();
-        script.onerror = () => {
-          delete window[callbackName];
-          document.body.removeChild(script);
-          reject(new Error('Fallo en la llamada de red por JSONP'));
-        };
-        document.body.appendChild(script);
-      });
     }
   </script>
 </body>
