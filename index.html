@@ -303,12 +303,12 @@
 
           <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Título del Documento *</label>
-            <input type="text" x-model="nuevoForm.titulo" required :disabled="subiendo" placeholder="Ej: Manual de Compresores Centrifugos" class="w-full p-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input type="text" x-model="nuevoForm.titulo" required :disabled="subiendo" placeholder="Ej: Manual de Compresores" class="w-full p-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
 
           <div>
             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label>
-            <textarea x-model="nuevoForm.descripcion" :disabled="subiendo" rows="2" placeholder="Detalles técnicos esenciales..." class="w-full p-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+            <textarea x-model="nuevoForm.descripcion" :disabled="subiendo" rows="2" placeholder="Detalles técnicos..." class="w-full p-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -333,8 +333,8 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tags (Palabras clave)</label>
-            <input type="text" x-model="nuevoForm.tags" :disabled="subiendo" placeholder="Ej: upstream, bombas, mtto" class="w-full p-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tags</label>
+            <input type="text" x-model="nuevoForm.tags" :disabled="subiendo" placeholder="Ej: upstream, bombas" class="w-full p-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
 
           <div class="flex justify-end gap-2 pt-4 border-t border-gray-100">
@@ -353,11 +353,10 @@
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzL7K6gW_4T_7gS1TqYhR3hF7CylX4pXgN6X6T3vHmxXfN4_f1oUXW_U8nF_uXn8w/exec"; // Reemplaza por tu URL exacta de Apps Script
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzL7K6gW_4T_7gS1TqYhR3hF7CylX4pXgN6X6T3vHmxXfN4_f1oUXW_U8nF_uXn8w/exec";
 
     function bibliotecaApp() {
       return {
-        // VARIABLES DE CONTROL DE SESIÓN Y VISTAS
         sesionIniciada: false,
         cargando: false,
         subiendo: false,
@@ -365,18 +364,15 @@
         filtroArea: '',
         filtroCategoria: '',
         
-        // ELEMENTOS DE CREDENCIALES
         emailInput: '',
         password: '',
         mostrarPassword: false,
 
-        // MODELOS DE DATOS
         usuario: { email: '', rol: '', permissions: { crear: false, leer: false, editar: false, borrar: false } },
         archivos: [],
         categorias: ['Planos', 'Manuales', 'Procedimientos', 'Informes', 'Especificaciones'],
         areas: ['Upstream', 'Midstream', 'Downstream', 'Seguridad', 'Mantenimiento'],
 
-        // FORMULARIOS DE MODALES
         modalAñadir: false,
         modalDetalles: false,
         itemDetalle: {},
@@ -386,16 +382,13 @@
         nuevoForm: { titulo: '', descripcion: '', area: '', categoria: '', tags: '', file: null },
         formEdicion: { id: '', titulo: '', descripcion: '', area: '', categoria: '', tags: '' },
 
-        // MÉTODO DE INICIALIZACIÓN AUTOMÁTICA
         async init() {
           const emailGuardado = localStorage.getItem('userEmail');
           if (emailGuardado) {
             this.emailInput = emailGuardado;
-            // Opcional: El usuario debe poner su clave de nuevo por seguridad
           }
         },
 
-        // CONTROL DE ACCESO
         async loginUsuario() {
           if (!this.emailInput || !this.password) {
             alert('Por favor, rellene todos los campos.');
@@ -431,7 +424,6 @@
           this.archivos = [];
         },
 
-        // MANEJO DE ARCHIVOS EN LA RED
         async inicializarDatos() {
           this.cargando = true;
           try {
@@ -448,7 +440,6 @@
           }
         },
 
-        // PROCESAMIENTO EN MEMORIA (FILTRADO)
         get archivosFiltrados() {
           return this.archivos.filter(item => {
             const matchesArea = !this.filtroArea || item.area === this.filtroArea;
@@ -465,7 +456,6 @@
           });
         },
 
-        // SECCIÓN DE DETALLES Y EDICIÓN
         abrirDetalles(item) {
           this.itemDetalle = item;
           this.modalDetalles = true;
@@ -521,7 +511,7 @@
         },
 
         async ejecutarEliminacion() {
-          const confirmar = confirm(`¿Estás completamente seguro de que deseas eliminar permanentemente el registro ${this.itemDetalle.id} y su archivo adjunto?`);
+          const confirmar = confirm(`¿Estás completamente seguro de eliminar el registro ${this.itemDetalle.id}?`);
           if (!confirmar) return;
 
           try {
@@ -543,7 +533,6 @@
           }
         },
 
-        // CARGA LOCAL Y SUBIDA DE ADJUNTOS BASE64
         cargarArchivoLocal(event) {
           const file = event.target.files[0];
           if (!file) return;
@@ -563,7 +552,7 @@
         },
 
         async subirNuevoArchivo() {
-          if (!this.nuevoForm.file) return alert('Por favor, seleccione un archivo válido.');
+          if (!this.nuevoForm.file) return alert('Por favor, seleccione un archivo.');
           this.subiendo = true;
 
           const payload = {
@@ -585,7 +574,7 @@
               body: JSON.stringify(payload)
             });
             
-            alert('Documento enviado con éxito. Sincronizando biblioteca...');
+            alert('Documento enviado con éxito. Sincronizando...');
             this.modalAñadir = false;
             this.nuevoForm = { titulo: '', descripcion: '', area: '', categoria: '', tags: '', file: null };
             
@@ -600,7 +589,6 @@
       }
     }
 
-    // PASARELA DE COMUNICACIÓN GLOBAL JSONP (LIBRE DE CORS DE LECTURA)
     function ejecutarPeticionJSONP(action, params = {}) {
       return new Promise((resolve, reject) => {
         const callbackName = 'jsonp_cb_' + Math.round(Math.random() * 1000000);
