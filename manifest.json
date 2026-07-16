@@ -2,7 +2,7 @@
     "name": "Repos Fosil",
     "short_name": "RepoFosil",
     "description": "Repositorio Digital de Energia Fósil",
-    "start_url": "/",
+    "start_url": "/https://freddybr.github.io/biblioteca-efosil/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#06CF42",
