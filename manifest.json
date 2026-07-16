@@ -1,23 +1,23 @@
 {
-    "name": "Repos Fosil",
-    "short_name": "RepoFosil",
-    "description": "Repositorio Digital de Energia Fósil",
-    "start_url": "/https://freddybr.github.io/biblioteca-efosil/",
-    "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#06CF42",
-    "icons": [
-        {
-            "src": "/https://freddybr.github.io/biblioteca-efosil/android-chrome-192x192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "/https://freddybr.github.io/biblioteca-efosil/android-chrome-512x512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-        }
-    ]
+  "name": "Repos Fosil",
+  "short_name": "RepoFosil",
+  "description": "Repositorio Digital de Energia Fósil",
+  "start_url": "https://freddybr.github.io/biblioteca-efosil/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#06CF42",
+  "icons": [
+    {
+      "src": "https://freddybr.github.io/biblioteca-efosil/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://freddybr.github.io/biblioteca-efosil/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
