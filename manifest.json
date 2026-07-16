@@ -1,17 +1,17 @@
 {
-  "name": "Repos Fosil",
-  "short_name": "RepoFosil",
-  "description": "Repositorio Digital de Energía Fósil",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "06CF42",
-  "icons": [
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
+    "name": "Repos Fosil",
+    "short_name": "RepoFosil",
+    "description": "Repositorio Digital de Energia Fósil",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#06CF42",
+    "icons": [
+        {
+            "src": "android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
 }
